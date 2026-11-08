@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Belépés – Kódfejtő Műhely</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="assets/common.css">
+<style>
+  body { min-height: 100vh; }
+  .top { display: flex; align-items: center; gap: 12px; padding: 18px 40px; background: var(--white); border-bottom: 4px solid var(--line); }
+  .top .logo-mark { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 40px; height: 40px; }
+  .top .logo-mark span { border-radius: 6px; }
+  .top b { font-family: 'Baloo 2', sans-serif; font-size: 26px; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 32px 24px 60px; display: flex; flex-direction: column; gap: 24px; }
+  h1 { font-size: 40px; margin: 0; }
+  .step { font-weight: 800; color: var(--blue); }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .pick { border: 3px solid var(--line); background: var(--white); border-radius: 20px; padding: 14px; cursor: pointer; font: inherit; color: var(--ink);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 800; font-size: 18px; }
+  .pick:hover, .pick:focus-visible { border-color: var(--blue); outline: none; }
+  .pick small { font-weight: 700; color: var(--muted); font-size: 14px; }
+  .groups3 { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .groups3 .pick { padding: 26px 18px; font-size: 22px; text-align: center; }
+  .pics { display: grid; gap: 14px; grid-template-columns: repeat(6, minmax(0, 1fr)); max-width: 760px; }
+  .pic { border: 3px solid var(--line); background: var(--white); border-radius: 20px; aspect-ratio: 1; font-size: 52px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .pic:hover, .pic:focus-visible { border-color: var(--blue); outline: none; transform: translateY(-2px); }
+  .slots { display: flex; gap: 14px; }
+  .slot { width: 92px; height: 92px; border-radius: 20px; border: 3px dashed #B5C9E6; display: flex; align-items: center; justify-content: center; font-size: 54px; background: var(--white); }
+  .slot.full { border-style: solid; border-color: var(--blue); }
+  .msg { font-weight: 800; font-size: 19px; min-height: 28px; }
+  .msg.err { color: var(--red-d); } .msg.ok { color: var(--green-d); }
+  .back { background: none; border: 0; color: var(--blue); font: inherit; font-weight: 800; cursor: pointer; padding: 0; text-align: left; }
+  .me-av { display: flex; align-items: center; gap: 16px; }
+  @media (max-width: 760px) { .groups3 { grid-template-columns: 1fr; } .pics { grid-template-columns: repeat(4, 1fr); } }
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="logo-mark" aria-hidden="true"><span style="background:#FF5A5F"></span><span style="background:#FFC93C"></span><span style="background:#2F6FED"></span><span style="background:#2BB673"></span></span>
+  <b>Kódfejtő Műhely</b>
+</div>
+<main class="wrap card" id="app" style="margin-top:32px"></main>
+<script src="assets/config.js"></script>
+<script src="assets/cloud.js"></script>
+<script src="assets/common.js"></script>
+<script>
+(function () {
+  'use strict';
+  const K = window.Kodfejto, C = window.KodfejtoCloud;
+  const app = document.getElementById('app');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const params = new URLSearchParams(location.search);
+  const back = params.get('vissza') || 'index.html';
+  const target = /^(index\.html|kuldetesek\.html|szotar\.html|palya\/index\.html)(#[\w-]*)?$/.test(back) ? back : 'index.html';
+
+  if (!C.enabled) {
+    app.innerHTML = '<h1>Itt nincs belépés</h1><p>Ez a műhely helyi módban fut: minden a saját böngésződben marad.</p><a class="btn btn-blue" href="index.html">Tovább a műhelybe</a>';
+    return;
+  }
+  if (C.session()) { location.replace(target); return; }
+
+  const st = { roster: null, group: K.store.get('lastGroup', ''), student: null, pics: [], busy: false };
+
+  async function load() {
+    app.innerHTML = '<p class="msg">Betöltöm a névsort…</p>';
+    try { st.roster = await C.roster(); render(); }
+    catch (e) { app.innerHTML = '<h1>Hoppá!</h1><p class="msg err">Nem érem el a műhely tárhelyét. Van internet? Próbáld újra egy perc múlva!</p><button class="btn btn-blue" id="retry">Újra</button>'; document.getElementById('retry').onclick = load; }
+  }
+
+  function render() {
+    if (!st.group) return renderGroups();
+    if (!st.student) return renderNames();
+    return renderPics();
+  }
+
+  function renderGroups() {
+    const have = new Set(st.roster.map((r) => r.grp));
+    const groups = Object.entries(K.GROUPS).filter(([k]) => have.has(k));
+    app.innerHTML = `<span class="step">1. lépés</span><h1>Melyik csapatban vagy?</h1>
+      <div class="groups3">${groups.map(([k, g]) => `<button class="pick" data-g="${k}">${g.name}<small>${g.sub}</small></button>`).join('')}</div>
+      ${groups.length ? '' : '<p class="msg">Még nincs felvéve senki. Szólj a tanárodnak!</p>'}`;
+    app.querySelectorAll('[data-g]').forEach((b) => b.onclick = () => { st.group = b.dataset.g; K.store.set('lastGroup', st.group); render(); });
+  }
+
+  function renderNames() {
+    const list = st.roster.filter((r) => r.grp === st.group);
+    app.innerHTML = `<button class="back" id="back">← Másik csapat</button>
+      <span class="step">2. lépés</span><h1>Ki vagy, ügynök?</h1>
+      <div class="grid">${list.map((r, i) => `<button class="pick" data-i="${i}">${K.avatarSVG(Object.assign({}, { head: 'round', eye: 'dots', acc: 'antenna', color: '#FFC93C' }, r.avatar || {}), 96)}${esc(r.codename)}</button>`).join('')}</div>`;
+    app.querySelector('#back').onclick = () => { st.group = ''; render(); };
+    app.querySelectorAll('[data-i]').forEach((b) => b.onclick = () => { st.student = list[+b.dataset.i]; st.pics = []; render(); });
+  }
+
+  function renderPics(msg, cls) {
+    const r = st.student;
+    app.innerHTML = `<button class="back" id="back">← Nem én vagyok</button>
+      <div class="me-av">${K.avatarSVG(Object.assign({ head: 'round', eye: 'dots', acc: 'antenna', color: '#FFC93C' }, r.avatar || {}), 90)}
+        <div><span class="step">3. lépés</span><h1>Szia, ${esc(r.codename)}!</h1></div></div>
+      <p style="margin:0;font-size:19px">Nyomd meg a titkos kép-kódod 3 képét, <b>sorban</b>!</p>
+      <div class="slots">${[0, 1, 2].map((i) => `<div class="slot ${st.pics[i] != null ? 'full' : ''}">${st.pics[i] != null ? '●' : ''}</div>`).join('')}
+        <button class="btn btn-plain" id="undo" ${st.pics.length ? '' : 'disabled'} style="align-self:center">⌫ Vissza</button></div>
+      <div class="pics">${C.PICS.map((p, i) => `<button class="pic" data-p="${i}" aria-label="${C.PIC_NAMES[i]}">${p}</button>`).join('')}</div>
+      <div class="msg ${cls || ''}" role="status">${msg || ''}</div>`;
+    app.querySelector('#back').onclick = () => { st.student = null; render(); };
+    app.querySelector('#undo').onclick = () => { st.pics.pop(); renderPics(); };
+    app.querySelectorAll('[data-p]').forEach((b) => b.onclick = () => {
+      if (st.busy || st.pics.length >= 3) return;
+      st.pics.push(+b.dataset.p);
+      if (st.pics.length < 3) return renderPics();
+      renderPics('Ellenőrzöm…');
+      submit();
+    });
+  }
+
+  async function submit() {
+    st.busy = true;
+    try {
+      const res = await C.login(st.student.codename, st.pics.join('-'));
+      st.busy = false;
+      if (res.ok) { renderPics('Bent vagy! Indulás…', 'ok'); location.replace(target); return; }
+      st.pics = [];
+      if (res.error === 'bad') renderPics('Nem ez a kép-kód. Próbáld újra! (Még ' + res.left + ' próbálkozásod van.)', 'err');
+      else if (res.error === 'locked') renderPics('Túl sok rossz próbálkozás. Várj ' + Math.ceil(res.wait / 60) + ' percet, vagy szólj a tanárodnak!', 'err');
+      else if (res.error === 'nocode') renderPics('Még nincs kép-kódod. Szólj a tanárodnak!', 'err');
+      else renderPics('Ezt a kódnevet nem találom. Szólj a tanárodnak!', 'err');
+    } catch (e) {
+      st.busy = false; st.pics = [];
+      renderPics('Nem érem el a tárhelyet. Van internet? Próbáld újra!', 'err');
+    }
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

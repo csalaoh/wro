@@ -18,6 +18,12 @@ SPIKE Prime szimulátor Pybricks Pythonhoz és SPIKE App blokkokhoz.
 | `index.html` | főoldal: küldetés-térkép, jelvények, kabala |
 | `kuldetesek.html` | a küldetések (órák) oldala |
 | `szotar.html`, `assets/dictionary.js` | a Kódszótár (új parancs: a dictionary.js-be) |
+| `belepes.html` | diákbelépés: csapat → kódnév → 3 képes kép-kód (csak felhős módban) |
+| `tanar.html` | tanári felület: ki hol tart, diákok, feloldások, mentés |
+| `assets/config.js` | a Supabase címe és nyilvános kulcsa; üresen = helyi mód |
+| `assets/cloud.js` | a Supabase-kapcsolat (diák és tanár) |
+| `supabase/schema.sql`, `supabase/TELEPITES.md` | az adatbázis és a bekapcsolás lépései |
+| `.github/workflows/ebreszto.yml` | napi „ébresztő”, hogy az ingyenes Supabase ne aludjon el |
 | `assets/common.css`, `assets/common.js` | közös stílus, csapat, avatár, jelvények |
 | `assets/lessons.js` | a küldetések szövege és programjai (ezt szerkeszd, ha új óra jön) |
 | `palya/index.html` | a szimulátor oldala |

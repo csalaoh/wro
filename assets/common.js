@@ -1,7 +1,12 @@
 /*
  * Kódfejtő Műhely – közös szkript
- * Tárolás (csak a gyerek böngészőjében), csoport, avatár, jelvények, fejléc.
- * Valódi nevet nem kérünk és nem tárolunk: a gyerek kódnevet választ.
+ * Tárolás, csoport, avatár, jelvények, fejléc.
+ * Valódi nevet nem kérünk és nem tárolunk: a gyerek kódnévvel szerepel.
+ *
+ * Két mód:
+ *  - helyi mód (assets/config.js üres): minden a gyerek böngészőjében marad;
+ *  - felhős mód (Supabase beállítva): belépés kódnévvel és kép-kóddal, a haladás
+ *    a tanár adatbázisába mentődik, a küldetéseket a tanár oldja fel.
  */
 (function () {
   'use strict';
@@ -56,12 +61,34 @@
   };
   const RANKS = [[0, 'Kódfejtő újonc'], [1, 'Kódfejtő tanonc'], [3, 'Kódfejtő segéd'], [6, 'Kódfejtő mester']];
   function badges() { return store.get('badges', []); }
-  function earn(id) { const b = badges(); if (!b.includes(id)) { b.push(id); store.set('badges', b); } }
+  function earn(id) {
+    const b = badges(); if (!b.includes(id)) { b.push(id); store.set('badges', b); }
+    if (cloud()) window.KodfejtoCloud.complete(id);
+  }
+
+  // ------------------------------------------------------------ felhős mód
+  const cloud = () => !!(window.KodfejtoCloud && window.KodfejtoCloud.enabled);
+  // Nyitott-e a küldetés? Helyi módban minden nyitott; felhős módban a tanár
+  // oldja fel (vagy a diák már teljesítette).
+  function unlocked(id) { return !cloud() || store.get('unlocks', []).includes(id) || badges().includes(id); }
+  const syncCbs = [];
+  function onSync(cb) { syncCbs.push(cb); }
   function rank() { const n = badges().length; let r = RANKS[0][1]; RANKS.forEach(([k, name]) => { if (n >= k) r = name; }); return r; }
 
   // ------------------------------------------------------------ fejléc, lábléc
   function header(active, base) {
     base = base || '';
+    if (cloud() && !window.KodfejtoCloud.session()) {
+      location.replace(base + 'belepes.html?vissza=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/') + location.hash));
+      return;
+    }
+    if (cloud()) {
+      window.KodfejtoCloud.pull(false).then((changed) => {
+        if (!changed) return;
+        header(active, base);
+        syncCbs.forEach((cb) => cb());
+      }).catch(() => { /* nincs net: a helyi másolattal dolgozunk */ });
+    }
     const p = profile(), g = GROUPS[store.get('group', '')];
     const nav = [
       ['home', 'Főoldal', base + 'index.html'],
@@ -86,7 +113,8 @@
     const f = document.getElementById('siteFooter');
     if (f) {
       f.className = 'site-footer';
-      f.innerHTML = '<div class="foot-rule"><span>A Kódfejtő Műhely a Diákszempont robotika tehetséggondozó foglalkozása.</span><span>Az oldal nem gyűjt adatot: minden a saját böngésződben marad.</span></div>';
+      f.innerHTML = '<div class="foot-rule"><span>A Kódfejtő Műhely a Diákszempont robotika tehetséggondozó foglalkozása.</span><span>'
+        + (cloud() ? 'A haladásod kódnévvel mentődik, a tanárod látja. Valódi nevet nem tárolunk.' : 'Az oldal nem gyűjt adatot: minden a saját böngésződben marad.') + '</span></div>';
     }
   }
 
@@ -96,13 +124,14 @@
     if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'setupDlg'; document.body.appendChild(dlg); }
     const p = profile();
     let group = store.get('group', '');
+    const isCloud = cloud();
     const chip = (key, val, label) => `<button type="button" class="chip ${p[key] === val ? 'on' : ''}" data-k="${key}" data-v="${val}">${label}</button>`;
     function render() {
       dlg.innerHTML = `<div class="dlg">
         <div class="dlg-head"><h2>Ki vagy, ügynök?</h2><button class="dlg-close" type="button" aria-label="Bezárás">×</button></div>
-        <div><div class="opt-title">1. Melyik csapatban vagy?</div>
-          <div class="groups">${Object.entries(GROUPS).map(([k, g]) => `<button type="button" class="group-card ${group === k ? 'on' : ''}" data-g="${k}"><strong>${g.name}</strong>${g.sub}</button>`).join('')}</div></div>
-        <div class="opt-title">2. Építsd meg az avatárodat!</div>
+        ${isCloud ? `<div style="font-weight:700">Csapatod: <strong>${GROUPS[group] ? GROUPS[group].name : group}</strong>. A kódnevedet és a csapatodat a tanárod adta.</div>` : `<div><div class="opt-title">1. Melyik csapatban vagy?</div>
+          <div class="groups">${Object.entries(GROUPS).map(([k, g]) => `<button type="button" class="group-card ${group === k ? 'on' : ''}" data-g="${k}"><strong>${g.name}</strong>${g.sub}</button>`).join('')}</div></div>`}
+        <div class="opt-title">${isCloud ? 'Építsd meg az avatárodat!' : '2. Építsd meg az avatárodat!'}</div>
         <div class="avatar-builder">
           <div class="avatar-preview"><div class="avatar-stage">${avatarSVG(p, 250)}</div><div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:26px">${p.name} ügynök</div></div>
           <div class="avatar-options">
@@ -110,18 +139,22 @@
             <div><div class="opt-title">Szem</div><div class="chips">${chip('eye', 'dots', 'Pötty')}${chip('eye', 'big', 'Nagy szem')}${chip('eye', 'shades', 'Napszemüveg')}</div></div>
             <div><div class="opt-title">Kiegészítő</div><div class="chips">${chip('acc', 'antenna', 'Antenna')}${chip('acc', 'hat', 'Nyomozókalap')}${chip('acc', 'phones', 'Fejhallgató')}${chip('acc', 'none', 'Semmi')}</div></div>
             <div><div class="opt-title">Szín</div><div class="chips">${COLORS.map(([c, n]) => `<button type="button" class="swatch ${p.color === c ? 'on' : ''}" data-k="color" data-v="${c}" aria-label="${n}" style="background:${c}"></button>`).join('')}</div></div>
-            <div><div class="opt-title">Kódnév</div><div class="chips">${NAMES.map((n) => chip('name', n, n)).join('')}</div></div>
+            ${isCloud ? '' : `<div><div class="opt-title">Kódnév</div><div class="chips">${NAMES.map((n) => chip('name', n, n)).join('')}</div></div>`}
           </div>
         </div>
-        <div><button type="button" class="btn btn-green" id="setupOk">Kész, ez vagyok én!</button>
-          <span id="setupMsg" style="margin-left:12px;font-weight:700;color:#C9393E"></span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><button type="button" class="btn btn-green" id="setupOk">Kész, ez vagyok én!</button>
+          ${isCloud ? '<button type="button" class="btn btn-plain" id="logoutBtn">Kilépek</button>' : ''}
+          <span id="setupMsg" style="font-weight:700;color:#C9393E"></span></div>
       </div>`;
       dlg.querySelector('.dlg-close').onclick = () => dlg.close();
+      const lo = dlg.querySelector('#logoutBtn');
+      if (lo) lo.onclick = async () => { lo.disabled = true; await window.KodfejtoCloud.logout(); location.href = (location.pathname.includes('/palya/') ? '../' : '') + 'belepes.html'; };
       dlg.querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { p[b.dataset.k] = b.dataset.v; render(); });
       dlg.querySelectorAll('[data-g]').forEach((b) => b.onclick = () => { group = b.dataset.g; render(); });
       dlg.querySelector('#setupOk').onclick = () => {
         if (!group) { dlg.querySelector('#setupMsg').textContent = 'Előbb válaszd ki a csapatodat!'; return; }
         store.set('profile', p); store.set('group', group);
+        if (isCloud) window.KodfejtoCloud.setAvatar(p);
         dlg.close();
         if (onDone) onDone(); else location.reload();
       };
@@ -130,5 +163,5 @@
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
   }
 
-  window.Kodfejto = { store, GROUPS, profile, avatarSVG, BADGES, badges, earn, rank, header, openSetup };
+  window.Kodfejto = { store, GROUPS, profile, avatarSVG, BADGES, badges, earn, rank, header, openSetup, unlocked, onSync, cloud };
 })();

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Tanári felület – Kódfejtő Műhely</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/common.css">
+<style>
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 40px; background: var(--white); border-bottom: 4px solid var(--line); }
+  .top .brand { display: flex; align-items: center; gap: 12px; }
+  .top .logo-mark { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 36px; height: 36px; }
+  .top .logo-mark span { border-radius: 6px; }
+  .top b { font-family: 'Baloo 2', sans-serif; font-size: 24px; }
+  .top .who { font-weight: 700; color: var(--muted); display: flex; gap: 12px; align-items: center; }
+  main.page { max-width: 1400px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tabs button { border: 0; background: var(--white); min-height: 46px; padding: 0 20px; border-radius: 14px; font: inherit; font-weight: 800; cursor: pointer; color: var(--ink); border-bottom: 4px solid var(--line); }
+  .tabs button.on { background: var(--ink); color: var(--white); border-bottom-color: var(--ink); }
+  table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+  th, td { padding: 8px 10px; border-bottom: 2px solid var(--sky); text-align: left; vertical-align: middle; }
+  th { font-size: 13px; letter-spacing: .5px; color: var(--muted); white-space: nowrap; }
+  td.m, th.m { text-align: center; width: 54px; }
+  .cell { width: 36px; height: 36px; border-radius: 10px; border: 2px solid var(--line); background: var(--white); cursor: pointer; font-weight: 800; font-size: 18px; color: var(--white); }
+  .cell.done { background: var(--green); border-color: var(--green-d); }
+  .cell.na { cursor: default; background: var(--sky); border-color: var(--sky); color: var(--muted); font-size: 13px; }
+  .linkbtn { background: none; border: 0; padding: 0; font: inherit; font-weight: 800; color: var(--blue); cursor: pointer; text-align: left; }
+  .muted { color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .field { display: flex; flex-direction: column; gap: 6px; font-weight: 800; }
+  input[type=email], input[type=password], input[type=text], select, textarea { font: inherit; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; color: var(--ink); background: var(--white); }
+  textarea { min-height: 160px; font-family: 'JetBrains Mono', monospace; font-size: 15px; }
+  pre.code { margin: 8px 0 0; background: #14203A; color: #E6EDF7; border-radius: 12px; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; max-height: 360px; overflow: auto; }
+  .btn-sm { min-height: 38px; padding: 0 14px; font-size: 14.5px; border-bottom-width: 3px; }
+  .msg { font-weight: 800; } .msg.err { color: var(--red-d); } .msg.ok { color: var(--green-d); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .pcard { border: 3px dashed var(--ink); border-radius: 16px; padding: 14px 16px; background: var(--white); break-inside: avoid; }
+  .pcard .n { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px; }
+  .pcard .p { font-size: 44px; letter-spacing: 8px; margin: 6px 0; }
+  .pcard .s { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+  .chipx { display: inline-flex; align-items: center; gap: 6px; background: var(--sky); border-radius: 999px; padding: 4px 6px 4px 12px; font-weight: 800; font-size: 14px; margin: 2px; }
+  .chipx button { border: 0; background: var(--white); border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: 800; }
+  .warnbox { background: #FFF1D6; border-left: 6px solid var(--yellow-d); border-radius: 0 14px 14px 0; padding: 12px 16px; }
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+    #printArea .noprint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><span class="logo-mark" aria-hidden="true"><span style="background:#FF5A5F"></span><span style="background:#FFC93C"></span><span style="background:#2F6FED"></span><span style="background:#2BB673"></span></span>
+    <b>Kódfejtő Műhely · Tanári felület</b></div>
+  <div class="who" id="who"></div>
+</div>
+<main class="page" id="app"></main>
+<script src="assets/config.js"></script>
+<script src="assets/cloud.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/lessons.js"></script>
+<script>
+(function () {
+  'use strict';
+  const K = window.Kodfejto, C = window.KodfejtoCloud, M = window.KodfejtoMissions;
+  const app = document.getElementById('app'), who = document.getElementById('who');
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmt = (d) => d ? new Date(d).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–';
+  const GROUPS = K.GROUPS;
+  const gname = (g) => GROUPS[g] ? GROUPS[g].name + ' (' + g + ')' : g;
+  const NAME_IDEAS = ['Csavar', 'Fogaskerék', 'Szikra', 'Bitfaragó', 'Vakond', 'Villám', 'Kódbagoly', 'Turbó', 'Mágnes', 'Radar', 'Szenzor', 'Lánctalp',
+    'Rakéta', 'Kvarc', 'Neon', 'Pixel', 'Sólyom', 'Üstökös', 'Robi', 'Giroszkóp', 'Lézer', 'Teszla', 'Zümi', 'Kobak', 'Morzsa', 'Bütyök', 'Dugó', 'Kapcsoló', 'Spirál', 'Tranzisztor'];
+
+  const S = { tab: 'overview', filter: '', students: [], progress: [], programs: [], unlocks: [], openStudent: null, cards: [] };
+
+  if (!C.enabled) {
+    app.innerHTML = `<div class="card"><h1>Még nincs bekapcsolva a felhős mód</h1>
+      <p>Az <code>assets/config.js</code> fájlba kell beírni a Supabase-projekt címét és nyilvános kulcsát. A lépéseket a <code>supabase/TELEPITES.md</code> írja le.</p></div>`;
+    return;
+  }
+
+  // ------------------------------------------------------------ belépés
+  function renderLogin(msg) {
+    who.innerHTML = '';
+    app.innerHTML = `<div class="card" style="max-width:520px">
+      <h1 style="font-size:34px">Tanári belépés</h1>
+      <form id="lf" style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
+        <label class="field">E-mail<input type="email" id="em" autocomplete="username" required></label>
+        <label class="field">Jelszó<input type="password" id="pw" autocomplete="current-password" required></label>
+        <button class="btn btn-blue" type="submit">Belépés</button>
+        <div class="msg err" id="lmsg">${esc(msg || '')}</div>
+      </form></div>`;
+    document.getElementById('lf').onsubmit = async (e) => {
+      e.preventDefault();
+      document.getElementById('lmsg').textContent = 'Belépés…';
+      try { await C.teacherLogin(document.getElementById('em').value.trim(), document.getElementById('pw').value); start(); }
+      catch (err) { document.getElementById('lmsg').textContent = 'Nem sikerült: hibás e-mail vagy jelszó.'; }
+    };
+  }
+
+  async function start() {
+    const tok = await C.teacherToken();
+    if (!tok) return renderLogin();
+    let ok = false;
+    try { ok = await C.t('POST', 'rpc:kf_is_teacher', {}); } catch (e) { return renderLogin('A belépés lejárt, lépj be újra.'); }
+    if (!ok) {
+      app.innerHTML = `<div class="card"><h1>Ez a fiók még nem tanár</h1>
+        <p>Futtasd le a Supabase SQL Editorban (a saját e-mail-címeddel):</p>
+        <pre class="code">insert into public.kf_teachers(user_id, email)
+select id, email from auth.users where email = '${esc(C.teacherSession().email)}';</pre>
+        <button class="btn btn-blue" id="again">Kész, újra próbálom</button> <button class="btn btn-plain" id="lo">Kilépés</button></div>`;
+      document.getElementById('again').onclick = start;
+      document.getElementById('lo').onclick = async () => { await C.teacherLogout(); renderLogin(); };
+      return;
+    }
+    who.innerHTML = `<span>${esc(C.teacherSession().email)}</span><button class="btn btn-plain btn-sm" id="reload">↻ Frissítés</button><button class="btn btn-plain btn-sm" id="lo">Kilépés</button>`;
+    document.getElementById('lo').onclick = async () => { await C.teacherLogout(); renderLogin(); };
+    document.getElementById('reload').onclick = () => loadAll().then(render);
+    await loadAll();
+    render();
+  }
+
+  async function loadAll() {
+    const [st, pr, pg, ul] = await Promise.all([
+      C.t('GET', '/kf_students?select=id,codename,grp,active,last_seen,created_at,avatar&order=grp,codename'),
+      C.t('GET', '/kf_progress?select=student_id,mission,done_at'),
+      C.t('GET', '/kf_programs?select=student_id,slot,mode,code,blocks,runs,updated_at&order=updated_at.desc'),
+      C.t('GET', '/kf_unlocks?select=id,mission,scope,target&order=mission'),
+    ]);
+    Object.assign(S, { students: st, progress: pr, programs: pg, unlocks: ul });
+  }
+
+  async function act(fn) {
+    try { await fn(); } catch (e) {
+      if (e.status === 401) return renderLogin('A belépés lejárt, lépj be újra.');
+      alert('Hiba: ' + e.message);
+    }
+    await loadAll(); render();
+  }
+
+  // ------------------------------------------------------------ fülek
+  function render() {
+    const tabs = [['overview', 'Ki hol tart?'], ['students', 'Diákok'], ['unlocks', 'Feloldások'], ['backup', 'Mentés']];
+    app.innerHTML = `<div class="tabs">${tabs.map(([k, t]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${t}</button>`).join('')}</div><div id="tab"></div>`;
+    app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { S.tab = b.dataset.tab; render(); });
+    ({ overview, students, unlocks, backup })[S.tab](document.getElementById('tab'));
+  }
+
+  function groupFilter() {
+    const gs = Array.from(new Set(S.students.map((s) => s.grp)));
+    return `<div class="row">${[['', 'Mind']].concat(gs.map((g) => [g, GROUPS[g] ? GROUPS[g].name : g])).map(([g, n]) =>
+      `<button class="chip ${S.filter === g ? 'on' : ''}" data-f="${g}">${esc(n)}</button>`).join('')}</div>`;
+  }
+  function bindFilter(el) { el.querySelectorAll('[data-f]').forEach((b) => b.onclick = () => { S.filter = b.dataset.f; render(); }); }
+
+  // ---- Ki hol tart?
+  function overview(el) {
+    const list = S.students.filter((s) => !S.filter || s.grp === S.filter);
+    const done = (id, m) => S.progress.find((p) => p.student_id === id && p.mission === m);
+    const nprog = (id) => S.programs.filter((p) => p.student_id === id).length;
+    el.innerHTML = `<div class="card" style="display:flex;flex-direction:column;gap:16px">
+      ${groupFilter()}
+      <p class="muted" style="margin:0">Zöld = teljesítette. Egy cellára kattintva kézzel is megadhatod vagy visszavonhatod. A kódnévre kattintva látod a programjait.</p>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Kódnév</th><th>Csapat</th><th>Utoljára</th>${M.map((m, i) => `<th class="m" title="${esc(m.title)}">${i + 1}.</th>`).join('')}<th>Programok</th></tr></thead>
+        <tbody>${list.map((s) => `<tr style="${s.active ? '' : 'opacity:.5'}">
+          <td><button class="linkbtn" data-open="${s.id}">${esc(s.codename)}</button></td>
+          <td class="muted">${esc(GROUPS[s.grp] ? GROUPS[s.grp].name : s.grp)}</td>
+          <td class="muted">${fmt(s.last_seen)}</td>
+          ${M.map((m) => {
+            const na = m.only && GROUPS[s.grp] && GROUPS[s.grp].mode !== m.only;
+            if (na) return '<td class="m"><button class="cell na" disabled title="Ennek a csapatnak nem kell">–</button></td>';
+            const d = done(s.id, m.id);
+            return `<td class="m"><button class="cell ${d ? 'done' : ''}" data-s="${s.id}" data-m="${m.id}" title="${esc(m.title)}${d ? ' – ' + fmt(d.done_at) : ''}">${d ? '✓' : ''}</button></td>`;
+          }).join('')}
+          <td class="muted">${nprog(s.id)}</td></tr>`).join('')}</tbody></table></div>
+      ${list.length ? '' : '<p class="muted">Még nincs diák ebben a csoportban. A Diákok fülön tudsz felvenni.</p>'}
+    </div><div id="detail"></div>`;
+    bindFilter(el);
+    el.querySelectorAll('[data-s]').forEach((b) => b.onclick = () => {
+      const sid = b.dataset.s, mid = b.dataset.m, d = done(sid, mid);
+      const st = S.students.find((x) => x.id === sid);
+      if (!confirm(d ? `Visszavonod: ${st.codename} – ${mid}?` : `Teljesítettnek jelölöd: ${st.codename} – ${mid}?`)) return;
+      act(() => d ? C.t('DELETE', `/kf_progress?student_id=eq.${sid}&mission=eq.${mid}`)
+                   : C.t('POST', '/kf_progress', { student_id: sid, mission: mid }, { Prefer: 'return=minimal' }));
+    });
+    el.querySelectorAll('[data-open]').forEach((b) => b.onclick = () => { S.openStudent = b.dataset.open; render(); });
+    if (S.openStudent) detail(document.getElementById('detail'));
+  }
+
+  function detail(el) {
+    const s = S.students.find((x) => x.id === S.openStudent);
+    if (!s) return;
+    const progs = S.programs.filter((p) => p.student_id === s.id);
+    const title = (slot) => { const i = M.findIndex((m) => m.id === slot); return i < 0 ? 'Szabad gyakorlás' : (i + 1) + '. ' + M[i].title; };
+    el.innerHTML = `<div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="row" style="justify-content:space-between"><h2 style="font-size:28px">${esc(s.codename)} programjai</h2><button class="btn btn-plain btn-sm" id="closeD">Bezár</button></div>
+      ${progs.length ? progs.map((p, i) => `<div style="border-top:2px solid var(--sky);padding-top:10px">
+        <div class="row" style="justify-content:space-between"><div><b>${esc(title(p.slot))}</b> · ${p.mode === 'blocks' ? 'blokk' : 'Python'}
+          <span class="muted">· ${fmt(p.updated_at)} · ${p.runs}× futtatta</span></div>
+          <button class="btn btn-blue btn-sm" data-run="${i}">▶ Megnyitás a pályán</button></div>
+        <pre class="code">${esc(p.code)}</pre></div>`).join('') : '<p class="muted">Még nem futtatott programot.</p>'}
+    </div>`;
+    el.querySelector('#closeD').onclick = () => { S.openStudent = null; render(); };
+    el.querySelectorAll('[data-run]').forEach((b) => b.onclick = () => {
+      const p = progs[+b.dataset.run];
+      if (p.mode === 'blocks' && p.blocks) K.store.set('tryBlocks', p.blocks); else K.store.set('tryCode', p.code);
+      window.open('palya/index.html#proba', '_blank');
+    });
+    el.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ---- Diákok
+  function randomPics() {
+    const a = []; while (a.length < 3) { const r = Math.floor(Math.random() * C.PICS.length); if (!a.includes(r)) a.push(r); }
+    return a;
+  }
+  function cardsHtml() {
+    if (!S.cards.length) return '';
+    return `<div class="card" id="printArea" style="display:flex;flex-direction:column;gap:14px">
+      <div class="row noprint" style="justify-content:space-between"><h2 style="font-size:26px">Belépőkártyák – nyomtasd ki és vágd szét!</h2>
+        <div class="row"><button class="btn btn-blue btn-sm" id="printBtn">🖨 Nyomtatás</button><button class="btn btn-plain btn-sm" id="clearCards">Elrejt</button></div></div>
+      <div class="warnbox noprint">A kép-kódot csak most látod: az adatbázisban titkosítva van, később nem lehet visszanézni. Ha elveszik, adj újat.</div>
+      <div class="cards">${S.cards.map((c) => `<div class="pcard"><div class="s">KÓDFEJTŐ MŰHELY · ${esc(GROUPS[c.grp] ? GROUPS[c.grp].name : c.grp)}</div>
+        <div class="n">${esc(c.codename)} ügynök</div><div class="p">${c.pics.map((i) => C.PICS[i]).join('')}</div>
+        <div class="s">Titkos kép-kódod, ebben a sorrendben. Ne mutasd meg senkinek!</div></div>`).join('')}</div></div>`;
+  }
+  function bindCards(el) {
+    const pb = el.querySelector('#printBtn'); if (pb) pb.onclick = () => window.print();
+    const cc = el.querySelector('#clearCards'); if (cc) cc.onclick = () => { S.cards = []; render(); };
+  }
+
+  function students(el) {
+    const used = new Set(S.students.map((s) => s.codename.toLowerCase()));
+    el.innerHTML = `${cardsHtml()}
+      <div class="card" style="display:flex;flex-direction:column;gap:14px">
+        <h2 style="font-size:26px">Új diákok felvétele</h2>
+        <p class="muted" style="margin:0">Soronként egy kódnév. Valódi nevet ne írj ide! Hogy melyik kódnév melyik gyerek, azt csak te tudd (papíron vagy a saját gépeden).</p>
+        <div class="row" style="align-items:flex-start">
+          <label class="field">Csapat<select id="ngrp">${Object.keys(GROUPS).map((g) => `<option value="${g}">${esc(gname(g))}</option>`).join('')}</select></label>
+          <label class="field" style="flex:1 1 300px">Kódnevek<textarea id="nnames" placeholder="Csavar&#10;Szikra&#10;Vakond"></textarea></label>
+        </div>
+        <div class="row"><button class="btn btn-plain btn-sm" id="ideas">💡 Ötletek (10 szabad név)</button>
+          <button class="btn btn-green" id="addBtn">Felvétel és belépőkártyák</button><span class="msg" id="amsg"></span></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:14px">
+        <h2 style="font-size:26px">Diákok</h2>
+        ${groupFilter()}
+        <div style="overflow-x:auto"><table><thead><tr><th>Kódnév</th><th>Csapat</th><th>Aktív</th><th>Utoljára</th><th></th></tr></thead>
+        <tbody>${S.students.filter((s) => !S.filter || s.grp === S.filter).map((s) => `<tr>
+          <td><b>${esc(s.codename)}</b></td>
+          <td><select data-grp="${s.id}">${Object.keys(GROUPS).map((g) => `<option value="${g}" ${g === s.grp ? 'selected' : ''}>${esc(GROUPS[g].name)}</option>`).join('')}</select></td>
+          <td><input type="checkbox" data-act="${s.id}" ${s.active ? 'checked' : ''} aria-label="aktív"></td>
+          <td class="muted">${fmt(s.last_seen)}</td>
+          <td><div class="row" style="justify-content:flex-end"><button class="btn btn-plain btn-sm" data-pics="${s.id}">🔑 Új kép-kód</button>
+            <button class="btn btn-plain btn-sm" data-del="${s.id}" style="color:var(--red-d)">Törlés</button></div></td></tr>`).join('')}</tbody></table></div>
+        <p class="muted" style="margin:0">Az inaktív diák nem jelenik meg a belépésnél, de az adatai megmaradnak. A törlés minden adatát (haladás, programok) véglegesen törli.</p>
+      </div>`;
+    bindCards(el); bindFilter(el);
+    el.querySelector('#ideas').onclick = () => {
+      const free = NAME_IDEAS.filter((n) => !used.has(n.toLowerCase())).sort(() => Math.random() - 0.5).slice(0, 10);
+      el.querySelector('#nnames').value = free.join('\n');
+    };
+    el.querySelector('#addBtn').onclick = async () => {
+      const grp = el.querySelector('#ngrp').value;
+      const names = Array.from(new Set(el.querySelector('#nnames').value.split('\n').map((x) => x.trim()).filter(Boolean)));
+      const msg = el.querySelector('#amsg');
+      if (!names.length) { msg.textContent = 'Írj be legalább egy kódnevet!'; msg.className = 'msg err'; return; }
+      msg.textContent = 'Felvétel…'; msg.className = 'msg';
+      const cards = [], skipped = [];
+      for (const n of names) {
+        const pics = randomPics();
+        try {
+          const r = await C.t('POST', 'rpc:kf_teacher_create', { p_codename: n, p_grp: grp, p_pics: pics.join('-') });
+          if (r.ok) cards.push({ codename: n, grp, pics }); else skipped.push(n);
+        } catch (e) { skipped.push(n); }
+      }
+      S.cards = cards.concat(S.cards);
+      if (skipped.length) alert('Ezek már foglaltak vagy hibásak, kihagytam: ' + skipped.join(', '));
+      await loadAll(); render();
+    };
+    el.querySelectorAll('[data-grp]').forEach((sel) => sel.onchange = () => act(() => C.t('PATCH', '/kf_students?id=eq.' + sel.dataset.grp, { grp: sel.value }, { Prefer: 'return=minimal' })));
+    el.querySelectorAll('[data-act]').forEach((cb) => cb.onchange = () => act(() => C.t('PATCH', '/kf_students?id=eq.' + cb.dataset.act, { active: cb.checked }, { Prefer: 'return=minimal' })));
+    el.querySelectorAll('[data-pics]').forEach((b) => b.onclick = () => {
+      const s = S.students.find((x) => x.id === b.dataset.pics);
+      if (!confirm(`Új kép-kódot kap: ${s.codename}? A régi azonnal megszűnik.`)) return;
+      const pics = randomPics();
+      act(async () => { await C.t('POST', 'rpc:kf_teacher_set_pics', { p_id: s.id, p_pics: pics.join('-') }); S.cards = [{ codename: s.codename, grp: s.grp, pics }].concat(S.cards); });
+    });
+    el.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => {
+      const s = S.students.find((x) => x.id === b.dataset.del);
+      if (!confirm(`Véglegesen törlöd ${s.codename} minden adatát (haladás, programok)?`)) return;
+      act(() => C.t('DELETE', '/kf_students?id=eq.' + s.id));
+    });
+  }
+
+  // ---- Feloldások
+  function unlocks(el) {
+    const gs = Object.keys(GROUPS);
+    const has = (m, scope, target) => S.unlocks.find((u) => u.mission === m && u.scope === scope && u.target === (target || ''));
+    el.innerHTML = `<div class="card" style="display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:26px">Melyik küldetés kinek nyitott?</h2>
+      <p class="muted" style="margin:0">Amit itt nem pipálsz be, az a gyerekeknek „Titkos küldetésként” látszik. Amit egy diák már teljesített, az nála nyitva marad.</p>
+      <div style="overflow-x:auto"><table><thead><tr><th>Küldetés</th><th class="m">Mindenki</th>${gs.map((g) => `<th class="m">${esc(GROUPS[g].name)}</th>`).join('')}<th>Egyénileg</th></tr></thead>
+      <tbody>${M.map((m, i) => `<tr><td><b>${i + 1}.</b> ${esc(m.title)}${m.only ? ' <span class="muted">(csak Python)</span>' : ''}</td>
+        <td class="m"><input type="checkbox" data-u="${m.id}|all|" ${has(m.id, 'all') ? 'checked' : ''}></td>
+        ${gs.map((g) => `<td class="m"><input type="checkbox" data-u="${m.id}|group|${g}" ${has(m.id, 'group', g) ? 'checked' : ''}></td>`).join('')}
+        <td>${S.unlocks.filter((u) => u.mission === m.id && u.scope === 'student').map((u) => `<span class="chipx">${esc(u.target)}<button data-ud="${u.id}" aria-label="törlés">×</button></span>`).join('')}
+          <select data-us="${m.id}"><option value="">+ diák…</option>${S.students.map((s) => `<option value="${esc(s.codename)}">${esc(s.codename)}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>
+    </div>`;
+    el.querySelectorAll('[data-u]').forEach((cb) => cb.onchange = () => {
+      const [mission, scope, target] = cb.dataset.u.split('|');
+      const u = has(mission, scope, target);
+      act(() => cb.checked ? C.t('POST', '/kf_unlocks', { mission, scope, target }, { Prefer: 'return=minimal' })
+                           : C.t('DELETE', '/kf_unlocks?id=eq.' + u.id));
+    });
+    el.querySelectorAll('[data-us]').forEach((sel) => sel.onchange = () => {
+      if (!sel.value) return;
+      act(() => C.t('POST', '/kf_unlocks', { mission: sel.dataset.us, scope: 'student', target: sel.value }, { Prefer: 'return=minimal' }));
+    });
+    el.querySelectorAll('[data-ud]').forEach((b) => b.onclick = () => act(() => C.t('DELETE', '/kf_unlocks?id=eq.' + b.dataset.ud)));
+  }
+
+  // ---- Mentés
+  function download(name, text, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  const csvCell = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const csv = (rows) => '﻿' + rows.map((r) => r.map(csvCell).join(';')).join('\r\n');
+  function backup(el) {
+    const day = new Date().toISOString().slice(0, 10);
+    el.innerHTML = `<div class="card" style="display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:26px">Mentés a saját gépedre</h2>
+      <p style="margin:0">Az ingyenes Supabase-csomagban nincs automatikus biztonsági mentés. Félévente, és nagyobb változás előtt töltsd le a teljes mentést!</p>
+      <div class="row"><button class="btn btn-blue" id="bAll">⬇ Teljes mentés (JSON)</button>
+        <button class="btn btn-plain" id="bProg">⬇ Haladás táblázat (CSV, Excelhez)</button>
+        <button class="btn btn-plain" id="bCode">⬇ Programok (CSV)</button></div>
+      <p class="muted" style="margin:0">A kép-kódok titkosítva vannak, a mentésben sem szerepelnek. Visszaállításkor új kép-kódot kell adni.</p>
+    </div>`;
+    const name = (id) => (S.students.find((s) => s.id === id) || {}).codename || id;
+    el.querySelector('#bAll').onclick = () => download('kodfejto-mentes-' + day + '.json',
+      JSON.stringify({ saved: new Date().toISOString(), students: S.students, progress: S.progress, programs: S.programs, unlocks: S.unlocks }, null, 1), 'application/json');
+    el.querySelector('#bProg').onclick = () => download('kodfejto-haladas-' + day + '.csv', csv(
+      [['Kódnév', 'Csapat', 'Utoljára'].concat(M.map((m, i) => (i + 1) + '. ' + m.title))].concat(
+        S.students.map((s) => [s.codename, s.grp, s.last_seen ? new Date(s.last_seen).toLocaleString('hu-HU') : ''].concat(
+          M.map((m) => { const p = S.progress.find((x) => x.student_id === s.id && x.mission === m.id); return p ? new Date(p.done_at).toLocaleDateString('hu-HU') : ''; }))))), 'text/csv');
+    el.querySelector('#bCode').onclick = () => download('kodfejto-programok-' + day + '.csv', csv(
+      [['Kódnév', 'Hely', 'Mód', 'Futtatások', 'Utoljára', 'Kód']].concat(
+        S.programs.map((p) => [name(p.student_id), p.slot, p.mode, p.runs, new Date(p.updated_at).toLocaleString('hu-HU'), p.code]))), 'text/csv');
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>

@@ -70,6 +70,8 @@
   <div id="list" style="display:flex;flex-direction:column;gap:26px"></div>
 </main>
 <footer id="siteFooter"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/cloud.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/lessons.js"></script>
 <script src="assets/dictionary.js"></script>
@@ -155,7 +157,7 @@
   // közvetlen hivatkozás egy szóra: szotar.html#turn
   const h = location.hash.slice(1);
   if (h && document.getElementById(h)) document.getElementById(h).scrollIntoView();
-  if (!K.store.get('group', '')) K.openSetup(() => location.reload());
+  if (!K.cloud() && !K.store.get('group', '')) K.openSetup(() => location.reload());
 })();
 </script>
 </body>

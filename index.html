@@ -70,6 +70,8 @@
   </section>
 </main>
 <footer id="siteFooter"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/cloud.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/lessons.js"></script>
 <script>
@@ -77,44 +79,52 @@
   'use strict';
   const K = window.Kodfejto;
   K.header('home');
-  const g = K.GROUPS[K.store.get('group', '')];
-  const mode = g ? g.mode : 'python';
-  const missions = window.KodfejtoMissions.filter((m) => !(m.only && m.only !== mode));
-  const done = K.badges();
-  const LOCKED_AFTER = 3; // a térkép végén még titkos küldetések
-  const nextIdx = missions.findIndex((m) => !done.includes(m.id));
 
-  // küldetés-térkép
-  let html = '';
-  missions.forEach((m, i) => {
-    const isDone = done.includes(m.id);
-    const cls = isDone ? 'done' : (i === nextIdx ? 'next' : 'open');
-    if (i > 0) html += `<div class="path ${done.includes(missions[i - 1].id) ? 'done' : ''}"></div>`;
-    html += `<a class="stop" href="kuldetesek.html#${m.id}"><span class="dot ${cls}">${isDone ? '✓' : i + 1}</span><span class="label">${i + 1}. ${m.title}</span></a>`;
-  });
-  for (let j = 0; j < LOCKED_AFTER; j++) {
-    html += `<div class="path"></div><div class="stop locked"><span class="dot locked">?</span><span class="label">Titkos küldetés</span></div>`;
+  function render() {
+    const g = K.GROUPS[K.store.get('group', '')];
+    const mode = g ? g.mode : 'python';
+    const all = window.KodfejtoMissions.filter((m) => !(m.only && m.only !== mode));
+    const missions = all.filter((m) => K.unlocked(m.id));   // ami nyitott
+    const lockedCount = all.length - missions.length;
+    const done = K.badges();
+    // a térkép végén titkos küldetések: amit a tanár még nem nyitott meg (+ egy meglepetés)
+    const LOCKED_AFTER = K.cloud() ? lockedCount + 1 : 3;
+    const nextIdx = missions.findIndex((m) => !done.includes(m.id));
+
+    // küldetés-térkép
+    let html = '';
+    missions.forEach((m, i) => {
+      const isDone = done.includes(m.id);
+      const cls = isDone ? 'done' : (i === nextIdx ? 'next' : 'open');
+      if (i > 0) html += `<div class="path ${done.includes(missions[i - 1].id) ? 'done' : ''}"></div>`;
+      html += `<a class="stop" href="kuldetesek.html#${m.id}"><span class="dot ${cls}">${isDone ? '✓' : i + 1}</span><span class="label">${i + 1}. ${m.title}</span></a>`;
+    });
+    for (let j = 0; j < LOCKED_AFTER; j++) {
+      html += `<div class="path"></div><div class="stop locked"><span class="dot locked">?</span><span class="label">Titkos küldetés</span></div>`;
+    }
+    document.getElementById('map').innerHTML = html;
+    document.getElementById('mapCount').textContent = done.filter((d) => missions.some((m) => m.id === d)).length + ' kész · ' + missions.length + ' nyitva';
+
+    const nb = document.getElementById('nextbar');
+    if (nextIdx >= 0) {
+      const m = missions[nextIdx];
+      nb.innerHTML = `<div class="txt"><strong>Most jön:</strong> ${m.title}. ${m.story}</div>
+        <a class="btn btn-blue" href="kuldetesek.html#${m.id}">Indulhat a küldetés!</a>`;
+    } else {
+      nb.innerHTML = '<div class="txt"><strong>Minden nyitott küldetést teljesítettél!</strong> Hamarosan jönnek az újak. Addig gyakorolj a virtuális pályán.</div><a class="btn btn-blue" href="palya/index.html">Irány a pálya!</a>';
+    }
+
+    // jelvények
+    document.getElementById('rank').textContent = 'Rangod: ' + K.rank();
+    document.getElementById('badges').innerHTML = missions.map((m) => {
+      const b = K.BADGES[m.id], has = done.includes(m.id);
+      return `<div class="badge ${has ? '' : 'no'}" title="${b.desc}"><div class="b">${has ? '★' : '?'}</div>${b.name}</div>`;
+    }).join('');
   }
-  document.getElementById('map').innerHTML = html;
-  document.getElementById('mapCount').textContent = done.filter((d) => missions.some((m) => m.id === d)).length + ' kész · ' + missions.length + ' nyitva';
+  render();
+  K.onSync(render);
 
-  const nb = document.getElementById('nextbar');
-  if (nextIdx >= 0) {
-    const m = missions[nextIdx];
-    nb.innerHTML = `<div class="txt"><strong>Most jön:</strong> ${m.title}. ${m.story}</div>
-      <a class="btn btn-blue" href="kuldetesek.html#${m.id}">Indulhat a küldetés!</a>`;
-  } else {
-    nb.innerHTML = '<div class="txt"><strong>Minden nyitott küldetést teljesítettél!</strong> Hamarosan jönnek az újak. Addig gyakorolj a virtuális pályán.</div><a class="btn btn-blue" href="palya/index.html">Irány a pálya!</a>';
-  }
-
-  // jelvények
-  document.getElementById('rank').textContent = 'Rangod: ' + K.rank();
-  document.getElementById('badges').innerHTML = missions.map((m) => {
-    const b = K.BADGES[m.id], has = done.includes(m.id);
-    return `<div class="badge ${has ? '' : 'no'}" title="${b.desc}"><div class="b">${has ? '★' : '?'}</div>${b.name}</div>`;
-  }).join('');
-
-  if (!g) K.openSetup(() => location.reload());
+  if (!K.cloud() && !K.store.get('group', '')) K.openSetup(() => location.reload());
 })();
 </script>
 </body>

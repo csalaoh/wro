@@ -48,6 +48,15 @@
     set(k, v) { try { localStorage.setItem('kodfejto.' + k, JSON.stringify(v)); } catch (e) { /* nincs tárolás */ } },
   };
 
+  // Felhős mód: belépés nélkül a pálya nem használható (kivéve a tanárt).
+  const Cloud = window.KodfejtoCloud;
+  const cloudOn = !!(Cloud && Cloud.enabled);
+  if (cloudOn && !Cloud.session() && !Cloud.teacherSession()) {
+    location.replace('../belepes.html?vissza=' + encodeURIComponent('palya/index.html' + location.hash));
+    return;
+  }
+  if (cloudOn) Cloud.flush().catch(() => {});
+
   // ------------------------------------------------------------ állapot
   const state = {
     mat: store.get('mat', 'palya1'),
@@ -817,6 +826,12 @@
       out.warnings.forEach((w) => log('💡 ' + w, 'c-hint'));
       code = out.code;
     }
+    // felhős mód: a program mentése a tanárnak (küldetésenként az utolsó)
+    if (cloudOn && Cloud.session()) {
+      const slot = store.get('slot', 'szabad');
+      if (state.mode === 'blocks') Cloud.saveProgram(slot, 'blocks', code, Blockly.serialization.workspaces.save(state.ws));
+      else Cloud.saveProgram(slot, 'python', ta.value, null);
+    }
     let res;
     try {
       res = await RT.runProgram(state.pyodide, state.shim, code, { mat: state.mat, start }, sampler);
@@ -952,10 +967,18 @@
   (function openMission() {
     // a Kódszótár „Kipróbálom” gombja: #proba
     if (location.hash === '#proba') {
-      const code = store.get('tryCode', null);
-      try { localStorage.removeItem('kodfejto.tryCode'); } catch (e) { /* nem baj */ }
+      const code = store.get('tryCode', null), blocks = store.get('tryBlocks', null);
+      try { localStorage.removeItem('kodfejto.tryCode'); localStorage.removeItem('kodfejto.tryBlocks'); } catch (e) { /* nem baj */ }
       try { history.replaceState(null, '', location.pathname); } catch (e) { /* nem baj */ }
+      if (blocks) {
+        setMode('blocks');
+        state.ws.clear();
+        Blockly.serialization.workspaces.load(blocks, state.ws);
+        log('📖 Betöltöttem a blokkos programot. Nyomd meg az Indulj! gombot!', 'c-hint');
+        return;
+      }
       if (!code) return;
+      store.set('slot', 'szabad');
       setMode('python');
       if (state.wro || state.mat === 'rajzlap') {
         setWro(false); state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = state.mat;
@@ -968,6 +991,7 @@
     const m = /^#(k\d+)-(python|blocks)$/.exec(location.hash);
     if (!m || !MISSION_START[m[1]]) return;
     const ms = MISSION_START[m[1]], mode = ms[m[2]] ? m[2] : 'python';
+    store.set('slot', m[1]); // a mentés ehhez a küldetéshez tartozik
     setMode(mode);
     if (ms.wro) {
       state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = 'wro1'; setWro(true);

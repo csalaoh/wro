@@ -55,6 +55,8 @@
 <header id="siteHeader"></header>
 <main class="page" id="content"></main>
 <footer id="siteFooter"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/cloud.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/lessons.js"></script>
 <script>
@@ -73,11 +75,15 @@
     const done = K.badges();
     root.innerHTML = `<div class="hero card"><span class="kicker">Küldetések</span><h1>Válassz küldetést!</h1>
       <p>Minden küldetésben megtudsz egy titkot a robotról, és kapsz egy mini kihívást, amit a virtuális pályán is kipróbálhatsz.</p></div>
-      <div class="mission-list">${M.filter(visible).map((m, i) => `
+      <div class="mission-list">${M.filter(visible).map((m, i) => K.unlocked(m.id) ? `
         <a class="card mcard" href="#${m.id}">
           <span class="mnum" style="background:${done.includes(m.id) ? '#2BB673' : COLORS[i % COLORS.length]}">${done.includes(m.id) ? '✓' : i + 1}</span>
           <span><h2>${m.title}</h2><p>${m.story}</p></span>
-        </a>`).join('')}</div>`;
+        </a>` : `
+        <div class="card mcard" style="opacity:.75">
+          <span class="mnum" style="background:#B5C9E6">?</span>
+          <span><h2>Titkos küldetés</h2><p><span class="stamp">SZIGORÚAN TITKOS</span> &nbsp;Majd a tanárod nyitja meg, ha eljön az ideje.</p></span>
+        </div>`).join('')}</div>`;
   }
 
   function codeBlock(v, mode) {
@@ -130,11 +136,12 @@
   function route() {
     const id = location.hash.slice(1);
     const m = M.find((x) => x.id === id);
-    if (m) detail(m); else list();
+    if (m && K.unlocked(m.id)) detail(m); else list();
   }
   window.addEventListener('hashchange', route);
   route();
-  if (!K.store.get('group', '')) K.openSetup(() => location.reload());
+  K.onSync(() => { if (!location.hash.slice(1)) list(); });
+  if (!K.cloud() && !K.store.get('group', '')) K.openSetup(() => location.reload());
 })();
 </script>
 </body>
