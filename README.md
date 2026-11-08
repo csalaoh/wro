@@ -19,6 +19,7 @@ SPIKE Prime szimulátor Pybricks Pythonhoz és SPIKE App blokkokhoz.
 | `kuldetesek.html` | a küldetések (órák) oldala |
 | `szotar.html`, `assets/dictionary.js` | a Kódszótár (új parancs: a dictionary.js-be) |
 | `jatekok.html`, `assets/games.js` | játékok: Légy te a robot!, Fok-tippelő, Hibavadász, Rakd sorba! |
+| `wro.html` | a WRO bemutatása gyerekeknek, a házi WRO és az út a versenyig |
 | `belepes.html` | diákbelépés: csapat → kódnév → 3 képes kép-kód (csak felhős módban) |
 | `tanar.html` | tanári felület: ki hol tart, diákok, feloldások, mentés |
 | `assets/config.js` | a Supabase címe és nyilvános kulcsa; üresen = helyi mód |

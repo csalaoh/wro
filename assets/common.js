@@ -96,6 +96,7 @@
       ['track', 'Pálya', base + 'palya/index.html'],
       ['dict', 'Szótár', base + 'szotar.html'],
       ['games', 'Játékok', base + 'jatekok.html'],
+      ['wro', 'WRO', base + 'wro.html'],
     ];
     const el = document.getElementById('siteHeader');
     el.className = 'site-header';
