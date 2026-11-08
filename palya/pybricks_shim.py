@@ -475,6 +475,43 @@ robotics.GyroDriveBase = DriveBase
 
 
 # ---------------------------------------------------------------- a futtató
+
+def _lint_user_program(source):
+    """Gyerekbarát figyelmeztetések a saját parancsokhoz (def).
+
+    - megírt, de sehol ki nem mondott (nem hívott) parancs
+    - zárójel nélküli "hívás": negyzet  helyett  negyzet()
+    Visszaad: [[sor, üzenet], ...]
+    """
+    import ast
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []
+    defs = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            defs.setdefault(node.name, node.lineno)
+    if not defs:
+        return []
+    called = set()
+    bare = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            called.add(node.func.id)
+        if (isinstance(node, ast.Expr) and isinstance(node.value, ast.Name)
+                and node.value.id in defs):
+            bare.append([node.lineno, node.value.id])
+    out = []
+    for line, name in bare:
+        out.append([line, "%d. sor: kimaradt a zárójel! Így a robot csak gondol a(z) %s szóra, "
+                          "de nem csinálja meg. Helyesen: %s()" % (line, name, name)])
+    for name, line in defs.items():
+        if name not in called and not any(b[1] == name for b in bare):
+            out.append([line, "Megtanítottad a robotnak a(z) %s szót (%d. sor), de sehol nem mondtad ki, "
+                              "ezért nem csinálja meg. Írd le valahol a def rész ALATT: %s()" % (name, line, name)])
+    return out
+
 def _run_user_program(source, line_limit):
     import traceback
 

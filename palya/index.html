@@ -114,6 +114,7 @@
       <option value="palya1">Pálya1 (farm)</option>
       <option value="palya2">Pálya2 (rács)</option>
       <option value="wro1">Házi WRO: Ébred a farm</option>
+      <option value="rajzlap">Rajzlap (üres, a robot rajzol)</option>
     </select>
     <button class="btn btn-go" id="runBtn" disabled>▶ Indulj!</button>
     <button class="btn btn-stop" id="stopBtn" disabled>■ Állj!</button>
@@ -180,6 +181,7 @@
       <div class="card panel checks">
         <h2>MEGJELENÍTÉS</h2>
         <label><input type="checkbox" id="optTrail" checked> Nyomvonal</label>
+        <label id="targetRow" hidden><input type="checkbox" id="optTarget" checked> Cél-dobogó mutatása</label>
         <label><input type="checkbox" id="optGhost" checked> Előző próba</label>
         <label for="toolSel" style="margin-top:6px">Mérés
           <select id="toolSel" style="min-height:34px;margin-left:auto"><option value="none">nincs</option><option value="tape">mérőszalag</option><option value="angle">szögmérő</option><option value="aim">célzás</option></select>

@@ -36,6 +36,7 @@
   const MATS = {
     palya1: { name: 'Pálya1', width: 1120, height: 990 },
     palya2: { name: 'Pálya2', width: 990, height: 1120 },
+    rajzlap: { name: 'Rajzlap', width: 1000, height: 800 },
   };
 
   const DT = 5;              // szimulációs lépés (ms)

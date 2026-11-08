@@ -50,6 +50,9 @@
     k2: { name: 'Nem búgócsiga', desc: 'A robotod egyenesen megy és pontosan fordul.' },
     k3: { name: 'Fokvadász', desc: 'Rájöttél, mi a különbség a kerékfok és a robotfok között.' },
     k4: { name: 'Iránytű', desc: 'Megmérted, mennyit javít a giroszkóp.' },
+    k5: { name: 'Szótanító', desc: 'Megtanítottál a robotnak egy új szót.' },
+    k6: { name: 'Dobogós', desc: 'A robotod megrajzolta a dobogót.' },
+    k7: { name: 'Farmer', desc: 'Felvesz és lerak saját paranccsal.' },
   };
   const RANKS = [[0, 'Kódfejtő újonc'], [1, 'Kódfejtő tanonc'], [3, 'Kódfejtő segéd'], [6, 'Kódfejtő mester']];
   function badges() { return store.get('badges', []); }

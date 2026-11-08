@@ -18,7 +18,12 @@
 
   SAMPLES.k3 = 'from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\nrobot.settings(straight_speed=240)\n\nrobot.straight(200)\nrobot.turn(90)\n';
 
-  SAMPLES.wro = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction, Color\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nrobot = DriveBase(Motor(Port.A, Direction.COUNTERCLOCKWISE), Motor(Port.B), 56, 112)\n\n# A bírónak szóló jelzések (házi WRO, 4.4 pont)\ndef felvesz():\n    hub.light.on(Color.GREEN)\n    hub.speaker.beep(800, 200)\n    wait(1000)\n\ndef lerak():\n    hub.light.on(Color.BLUE)\n    hub.speaker.beep(400, 200)\n    wait(1000)\n\n# Odamegyünk a jobb oldali kosárhoz (K2), és felvesszük\nrobot.turn(7.6)\nrobot.straight(258)\nfelvesz()\n\n# Most te jössz: vidd a kosarat a bal felső parcellára, és ott: lerak()\n';
+  SAMPLES.wro = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction, Color\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# TANÁRI MINTA – ugyanaz a farm, saját parancsokkal\n\n# A bírónak szóló jelzések (házi WRO, 4.4 pont)\ndef felvesz():\n    hub.light.on(Color.GREEN)\n    hub.speaker.beep(800, 200)\n    wait(1000)\n\ndef lerak():\n    hub.light.on(Color.BLUE)\n    hub.speaker.beep(400, 200)\n    wait(1000)\n\n# K2 kosár a bal felső parcellára\nrobot.turn(7.6)\nrobot.straight(258)\nfelvesz()\nrobot.turn(17.3)\nrobot.straight(370)\nlerak()\n\n# Ha később fogókar kerül a robotra, CSAK a felvesz() és lerak()\n# belsejét kell átírni – a pálya kódja ugyanaz marad.\n';
+
+  SAMPLES.k5 = 'from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# 1. MEGTANÍTJUK a robotnak, mi az a "negyzet".\n#    Figyeld meg: ettől még NEM mozdul!\ndef negyzet():\n    for i in range(4):\n        robot.straight(150)\n        robot.turn(90)\n\n# 2. KIMONDJUK a szót: most rajzolja meg!\nnegyzet()\n';
+  SAMPLES.k6 = 'from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# A szó, amit már ismersz\ndef negyzet():\n    for i in range(4):\n        robot.straight(150)\n        robot.turn(90)\n\n# 1. sor: alul három négyzet egymás mellett\nnegyzet()\n# ... innen folytasd: hogyan jutsz át a következő négyzet sarkába?\n\n# 2. sor: két négyzet, fél négyzettel (75 mm) beljebb\n\n# 3. sor: legfelül egy négyzet, középen\n';
+  SAMPLES.dobogo = 'from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# TANÁRI MEGOLDÁS – a dobogó (oldal: 15 cm)\n\ndef negyzet():\n    for i in range(4):\n        robot.straight(150)\n        robot.turn(90)\n\n# A második szó, amire a gyerekeknek maguktól kell rájönniük:\n# "lépj át a szomszéd négyzet sarkába"\ndef jobbra_lep():\n    robot.turn(90)\n    robot.straight(150)\n    robot.turn(-90)\n\n# 1. sor: 3 négyzet\nnegyzet()\njobbra_lep()\nnegyzet()\njobbra_lep()\nnegyzet()\n\n# Átállás a 2. sor elejére: fel 15 cm, balra 22,5 cm\nrobot.straight(150)\nrobot.turn(-90)\nrobot.straight(225)\nrobot.turn(90)\n\n# 2. sor: 2 négyzet\nnegyzet()\njobbra_lep()\nnegyzet()\n\n# Átállás a 3. sorra: fel 15 cm, balra 7,5 cm\nrobot.straight(150)\nrobot.turn(-90)\nrobot.straight(75)\nrobot.turn(90)\n\n# 3. sor: 1 négyzet\nnegyzet()\n';
+  SAMPLES.k7 = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction, Color\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# 1. Odamegyünk a jobb oldali kosárhoz (K2)\nrobot.turn(7.6)\nrobot.straight(258)\n\n# FELVESZEM! – jelzés a bírónak\nhub.light.on(Color.GREEN)\nhub.speaker.beep(800, 200)\nwait(1000)\n\n# 2. Elvisszük a bal felső parcellára, a madárijesztő mellett\nrobot.turn(17.3)\nrobot.straight(370)\n\n# LERAKOM! – jelzés a bírónak\nhub.light.on(Color.BLUE)\nhub.speaker.beep(400, 200)\nwait(1000)\n\n# 3. Most te jössz: hozd el a másik kosarat (K1) a középső parcellára!\n';
 
   // A küldetések kiinduló programja (a Küldetések oldal „Kipróbálom a pályán” gombja: #k2-python)
   const MISSION_START = {
@@ -26,11 +31,15 @@
     k2: { python: 'square', blocks: 'square', mat: 'palya2' },
     k3: { python: 'k3', blocks: 'turn' },
     k4: { python: 'gyro' },
+    k5: { python: 'k5', blocks: 'k5', mat: 'rajzlap' },
+    k6: { python: 'k6', blocks: 'k6', mat: 'rajzlap' },
+    k7: { python: 'k7', blocks: 'k7', wro: true },
   };
 
   const DEFAULT_START = {
     palya1: { x: 120, y: 120, heading: 0 },
     palya2: { x: 495, y: 110, heading: 0 },
+    rajzlap: { x: 275, y: 180, heading: 0 },
   };
 
   // ------------------------------------------------------------ tárolás
@@ -101,12 +110,19 @@
       ta.dispatchEvent(new Event('input'));
     }
   });
-  const PY_SAMPLE_LABELS = { square: 'Bűvös négyzet (2. óra)', gyro: 'Négyzet giroszkóppal', beep: 'Első csipogás (1. óra)', color: 'Mit lát a színszenzor?', wro: 'Házi WRO: felvesz és lerak' };
+  const PY_SAMPLE_LABELS = { beep: 'Első csipogás (1. küldetés)', square: 'Bűvös négyzet (2. küldetés)', k3: 'Fordulás 90 fokkal (3. küldetés)', gyro: 'Négyzet giroszkóppal (4. küldetés)', color: 'Mit lát a színszenzor?', k5: 'A robot új szót tanul: négyzet (5. küldetés)', k6: 'Dobogó – kezdés (6. küldetés)', k7: 'Ébred a farm – kézzel (7. küldetés)', dobogo: '🔑 TANÁRI: dobogó – teljes megoldás', wro: '🔑 TANÁRI: farm – felvesz() és lerak() paranccsal' };
+  const TEACHER_SAMPLES = new Set(['dobogo', 'wro']);
+  // Tanári mód: palya/index.html?tanar  (a böngésző megjegyzi; ?tanar=0 kikapcsolja)
+  (function () {
+    const m = /[?&]tanar(=([01]))?/.exec(location.search);
+    if (m) store.set('teacher', m[2] !== '0');
+  })();
+  const isTeacher = () => store.get('teacher', false);
   function fillSamples() {
     const sel = $('sampleSel');
     const list = state.mode === 'blocks'
-      ? Object.entries(window.KodfejtoBlocks.SAMPLES).map(([k, v]) => [k, v.label])
-      : Object.entries(PY_SAMPLE_LABELS);
+      ? Object.entries(window.KodfejtoBlocks.SAMPLES).filter(([, v]) => !v.teacher || isTeacher()).map(([k, v]) => [k, v.label])
+      : Object.entries(PY_SAMPLE_LABELS).filter(([k]) => !TEACHER_SAMPLES.has(k) || isTeacher());
     sel.innerHTML = '';
     const first = document.createElement('option'); first.value = ''; first.textContent = 'Minta betöltése…'; sel.appendChild(first);
     list.forEach(([k, label]) => { const o = document.createElement('option'); o.value = k; o.textContent = label; sel.appendChild(o); });
@@ -148,7 +164,7 @@
       zoom: { controls: false, wheel: true, startScale: 0.75, maxScale: 1.6, minScale: 0.4 },
       grid: { spacing: 24, length: 2, colour: '#DCE6F5', snap: false },
       move: { scrollbars: true, drag: true, wheel: false },
-      theme: Blockly.Theme.defineTheme('kodfejto', { base: Blockly.Themes.Zelos, fontStyle: { family: 'Nunito, sans-serif', weight: '700', size: 12 } }),
+      theme: Blockly.Theme.defineTheme('kodfejto', { base: Blockly.Themes.Zelos, blockStyles: { procedure_blocks: { colourPrimary: '#FF6680', colourSecondary: '#FF8FA3', colourTertiary: '#D94B66' } }, fontStyle: { family: 'Nunito, sans-serif', weight: '700', size: 12 } }),
     });
     const saved = store.get('blocks', null);
     try {
@@ -221,6 +237,10 @@
     if (/ENODEV/.test(err)) return 'Ezen a porton nincs ilyen eszköz. Az iskolai robotnál: A = bal motor, B = jobb motor, C = színszenzor, D = távolságérzékelő.';
     if (/expected ':'/.test(err)) return 'Hiányzik egy kettőspont (:) a sor végéről. A for, while, if és def sorok kettősponttal végződnek.';
     if (/IndentationError|unindent|expected an indented block/.test(err)) return 'A behúzással van baj: a ciklus belsejében minden sor ugyanannyival (4 szóközzel) beljebb kezdődjön.';
+    const ne = /NameError: name '(\w+)' is not defined/.exec(err);
+    if (ne && state.mode === 'python' && new RegExp('^\\s*def\\s+' + ne[1] + '\\s*\\(', 'm').test(ta.value)) {
+      return 'A(z) ' + ne[1] + ' szót előbb meg kell tanítani a robotnak (def), és csak UTÁNA lehet kimondani. Tedd a def részt a program elejére, a hívás fölé!';
+    }
     if (/NameError/.test(err)) return 'A robot nem ismeri ezt a nevet. Elírtad, vagy kis- és nagybetűt kevertél (PrimeHub, Motor, Port, DriveBase), vagy kimaradt egy import?';
     if (/was never closed|unmatched|EOF/.test(err)) return 'Valahol hiányzik egy zárójel vagy idézőjel.';
     if (/SyntaxError/.test(err)) return 'A robot nem érti ezt a sort. Nézd meg a zárójeleket, vesszőket és idézőjeleket!';
@@ -274,10 +294,10 @@
     return n ? [r / n, g / n, b / n] : [255, 255, 255];
   }
 
-  function drawPath(frames, uptoT, color, dashed) {
+  function drawPath(frames, uptoT, color, dashed, width) {
     if (!frames || frames.length < 2) return;
     ctx.save();
-    ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeStyle = color; ctx.lineWidth = width || 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     if (dashed) ctx.setLineDash([7, 6]);
     ctx.beginPath();
     let first = true;
@@ -477,6 +497,26 @@
     drawRobot({ x: state.aim[0] - Math.sin(h) * Sim.ROBOT_DEFAULT.pointer, y: state.aim[1] - Math.cos(h) * Sim.ROBOT_DEFAULT.pointer, heading: d.b }, 0.35);
   }
 
+  // Rajzlap: a cél-dobogó halvány képe a rajthelyzethez igazítva (a robot tengelyközepe a bal alsó sarok)
+  const PODIUM_SIDE = 150; // a négyzet oldala mm-ben (15 cm) – itt lehet átírni
+  function podiumSquares(a) {
+    return [[0, 0], [a, 0], [2 * a, 0], [a / 2, a], [1.5 * a, a], [a, 2 * a]];
+  }
+  function drawTarget() {
+    const st = state.starts.rajzlap, a = PODIUM_SIDE, s = scale();
+    const [px, py] = toPx(st.x, st.y);
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(st.heading * Math.PI / 180);
+    ctx.fillStyle = 'rgba(47,111,237,0.07)';
+    ctx.strokeStyle = 'rgba(47,111,237,0.45)'; ctx.lineWidth = 6; ctx.setLineDash([]);
+    podiumSquares(a).forEach(([x, y]) => {
+      ctx.fillRect(x * s, -(y + a) * s, a * s, a * s);
+      ctx.strokeRect(x * s, -(y + a) * s, a * s, a * s);
+    });
+    ctx.restore();
+  }
+
   function render() {
     if (state.aim && $('toolSel').value === 'aim') updateAim();
     // a robot elejéhez kötött mérőszalag együtt mozog a robottal
@@ -490,7 +530,11 @@
       drawRobot(state.ghost.final, 0.3);
     }
     const playT = state.play ? state.play.t : (state.result ? Infinity : -1);
-    if ($('optTrail').checked && state.result && state.result.mat === state.mat) drawPath(state.result.frames, playT, '#2F6FED', false);
+    if (state.mat === 'rajzlap' && $('optTarget').checked) drawTarget();
+    if ($('optTrail').checked && state.result && state.result.mat === state.mat) {
+      if (state.mat === 'rajzlap') drawPath(state.result.frames, playT, '#1D2B44', false, 4); // toll
+      else drawPath(state.result.frames, playT, '#2F6FED', false);
+    }
     const pose = state.pose || state.starts[state.mat];
     drawWro(pose);
     drawRobot(pose, 1);
@@ -582,7 +626,7 @@
     store.set('starts', state.starts);
     render();
   }));
-  ['optTrail', 'optGhost'].forEach((id) => $(id).addEventListener('change', render));
+  ['optTrail', 'optGhost', 'optTarget'].forEach((id) => $(id).addEventListener('change', render));
   function updateToolHint() {
     const tool = $('toolSel').value, h = $('toolHint');
     $('robotAngleBtn').hidden = tool !== 'angle';
@@ -651,8 +695,9 @@
     setWro(v === 'wro1');
     state.mat = v === 'wro1' ? 'palya1' : v; store.set('mat', state.mat);
     state.pose = null; state.result = null; state.ghost = null; state.tape = []; state.ang = null;
-    fitCanvas(); render();
+    updateMatUi(); fitCanvas(); render();
   });
+  function updateMatUi() { $('targetRow').hidden = state.mat !== 'rajzlap'; }
 
   // ------------------------------------------------------------ házi WRO: Ébred a farm
   const J = window.KodfejtoJudge;
@@ -782,6 +827,7 @@
     }
     res.mat = state.mat;
     state.result = res;
+    if (state.mode === 'python' && res.lint) res.lint.forEach(([, msg]) => log('💡 ' + msg, 'c-hint'));
     if (state.wro) {
       resetWroCards();
       state.wro.judge = J.evaluate(res, state.wro.order, Sim.ROBOT_DEFAULT);
@@ -898,6 +944,7 @@
   if (!Sim.MATS[state.mat]) state.mat = 'palya1';
   $('matSel').value = store.get('wro', false) ? 'wro1' : state.mat;
   if (store.get('wro', false)) { state.mat = 'palya1'; setWro(true); }
+  updateMatUi();
   fitCanvas();
   resetHub();
   setMode(state.mode === 'blocks' ? 'blocks' : 'python');
@@ -907,9 +954,15 @@
     if (!m || !MISSION_START[m[1]]) return;
     const ms = MISSION_START[m[1]], mode = ms[m[2]] ? m[2] : 'python';
     setMode(mode);
-    if (ms.mat && ms.mat !== state.mat) {
+    if (ms.wro) {
+      state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = 'wro1'; setWro(true);
+      state.pose = null; state.result = null; state.ghost = null; updateMatUi(); fitCanvas();
+    } else if (ms.mat && (ms.mat !== state.mat || state.wro)) {
       setWro(false);
-      state.mat = ms.mat; store.set('mat', state.mat); $('matSel').value = state.mat; fitCanvas();
+      state.mat = ms.mat; store.set('mat', state.mat); $('matSel').value = state.mat;
+      state.pose = null; state.result = null; state.ghost = null; updateMatUi(); fitCanvas();
+    } else if (!ms.mat && state.mat === 'rajzlap') {
+      state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = state.mat; updateMatUi(); fitCanvas();
     }
     const key = ms[mode];
     if (mode === 'blocks') {
@@ -924,7 +977,7 @@
   updateToolHint();
   log('Írd meg a programot, aztán nyomd meg az Indulj! gombot.', 'c-muted');
 
-  Promise.all([loadImage('palya1'), loadImage('palya2')]).then(render).catch(() => log('A pályakép nem töltődött be.', 'c-err'));
+  Promise.all([loadImage('palya1'), loadImage('palya2'), loadImage('rajzlap')]).then(render).catch(() => log('A pályakép nem töltődött be.', 'c-err'));
   render();
 
   (async () => {

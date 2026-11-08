@@ -1,6 +1,6 @@
 /*
  * Kódfejtő Műhely – a küldetések (órák) tartalma
- * Forrás: Laci óratervei (1–2. foglalkozás, Blokk vs. Python, Giroszkópos mozgás)
+ * Forrás: Laci óratervei (1–2. foglalkozás, Blokk vs. Python, Giroszkópos mozgás); 5–7.: saját parancsok (def)
  * és a Titkos Kódfejtő Füzet.
  *
  * Minden küldetés két változatban: "python" (Pybricks) és "blocks" (SPIKE App).
@@ -127,6 +127,111 @@
           ['hub.imu.heading()', 'Mennyit fordult a robot a giroszkóp szerint.'],
         ],
         challenge: 'Futtasd le a négyzetet giroszkóp nélkül is (töröld a use_gyro sort)! A pályán mérd meg a mérőszalaggal, mennyire tér el a végpont a rajttól a két esetben.',
+      },
+    },
+    {
+      id: 'k5',
+      title: 'A robot új szót tanul',
+      story: 'Eddig minden lépést külön meg kellett mondanunk a robotnak. Ma megtanítunk neki egy új szót. Elég egyszer elmagyarázni, utána csak kimondjuk, és ő tudja, mit kell csinálnia.',
+      learn: ['Mi a különbség a szó megtanítása (def) és a kimondása (hívás) között?', 'Hogyan készítünk saját parancsot?', 'Miért nem mozdul a robot, ha csak megtanítjuk neki a szót?'],
+      warmup: {
+        title: 'Óra eleji játék: a béka',
+        intro: 'Gép nélkül, kb. 5 perc. Egy gyerek a robot, a tanár (vagy egy másik gyerek) a programozó. A programot a táblára írjuk.',
+        board: 'def beka():\n    guggolj\n    ugorj\n    tapsolj\n\nlépj előre 2-t\nbeka()\nfordulj meg\nbeka()',
+        steps: [
+          'Felírjuk a táblára a felső részt: <code>def beka():</code> és alá beljebb a három mozdulatot. Megkérdezzük: <b>most mit csinál a robot?</b> Semmit! Csak megjegyezte, mi az a béka.',
+          'Felírjuk alá a programot, és a „robot” végrehajtja. Ahányszor elhangzik a <code>beka()</code>, annyiszor guggol, ugrik és tapsol.',
+          'Letöröljük az alsó részt, csak a <code>def</code> marad. A robot áll. <b>Miért nem mozdul?</b> Mert senki nem mondta ki a szót!',
+          'Csavar a végére: a programozó azt írja, <code>beka</code>, zárójel nélkül. A robot nem ugrik, csak gondol a békára. A zárójel jelenti azt, hogy „csináld!”.',
+        ],
+      },
+      rules: [
+        { t: 'Megtanítani nem ugyanaz, mint megcsinálni', d: 'Ha a tornatanár elmagyaráz egy új mozdulatot, attól még senki nem ugrál. Csak akkor, amikor kimondja a nevét. A <code>def</code> a megtanítás, a <code>negyzet()</code> a kimondás. Ezt hívjuk <b>függvényhívásnak</b>.' },
+        { t: 'Ami a szóhoz tartozik, beljebb kezdődik', d: 'A <code>def negyzet():</code> sor kettősponttal végződik, és ami a szó jelentéséhez tartozik, az 4 szóközzel beljebb kezdődik, pont mint a <code>for</code> ciklusnál. Ahol a behúzás véget ér, ott ér véget a szó magyarázata.' },
+        { t: 'Előbb tanítsd, aztán mondd ki, zárójellel!', d: 'A robot fentről lefelé olvas, ezért a <code>def</code> a program elejére kerül, a kimondás alá. Kimondáskor ne felejtsd el a zárójelet: <code>negyzet()</code>. Zárójel nélkül a robot csak gondol a szóra, de nem csinálja meg.' },
+      ],
+      python: {
+        code: "from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# 1. MEGTANÍTJUK a robotnak, mi az a \"negyzet\".\n#    Figyeld meg: ettől még NEM mozdul!\ndef negyzet():\n    for i in range(4):\n        robot.straight(150)\n        robot.turn(90)\n\n# 2. KIMONDJUK a szót: most rajzolja meg!\nnegyzet()\n",
+        explain: [
+          ['bal, jobb, robot = …', 'A már ismert Szuper-sofőr a két motorral (2. küldetés).'],
+          ['def negyzet():', 'Megtanítjuk a robotnak a „negyzet” szót. A def a „define”, vagyis „meghatározni” szó rövidítése. A név után a zárójel és a kettőspont kötelező.'],
+          ['    for i in range(4): …', 'A szó jelentése: négyszer menj 15 centit (150 mm) és fordulj 90 fokot. Ezek a sorok beljebb kezdődnek, mert a szóhoz tartoznak. Amíg csak eddig ér a program, a robot NEM mozdul!'],
+          ['negyzet()', 'Itt mondjuk ki a szót. A robot megkeresi, mit jelent a negyzet, és végrehajtja: megrajzolja a négyzetet. Ez a függvényhívás.'],
+        ],
+        challenge: '1. Töröld ki az utolsó sort (<code>negyzet()</code>), és futtasd! Mit csinál a robot, és miért?<br>2. Írd le kétszer egymás alá: <code>negyzet()</code>. Hány négyzetet látsz a rajzlapon? Miért?<br>3. A két <code>negyzet()</code> közé írd be: <code>robot.turn(-90)</code>. Mit rajzol most a robot?',
+      },
+      blocks: {
+        code: [['events', 'when program starts'], ['movement', 'set movement motors to A+B'], ['movement', 'set 1 motor rotation to 17.5 cm'], ['myblocks', 'negyzet'], ['gap'], ['define', 'define negyzet'], ['control', 'repeat 4', 1], ['movement', 'move ↑ for 15 cm', 2], ['movement', 'move right: 100 for 180 degrees', 2]],
+        explain: [
+          ['define negyzet', 'Ez a kalap a megtanítás. A SPIKE Appban a Saját blokkok (My Blocks) között a „Make a Block” gombbal készül, a szimulátorban a Saját blokkok közül húzd ki a „define” kalapot, és írd át a nevét. Ami alá kerül, az a szó jelentése. Ettől még NEM fut semmi!'],
+          ['repeat 4 → move, move right', 'A szó jelentése: négyszer menj 15 cm-t és fordulj. 180 kerékfok = 90 fokos robotfordulás, emlékszel a 3. küldetésre?'],
+          ['negyzet', 'Ez a kimondás: a rózsaszín negyzet blokk a „when program starts” alatt. Ettől rajzol a robot. Ha kiveszed onnan, a robot csak áll.'],
+        ],
+        challenge: '1. Vedd ki a negyzet blokkot a „when program starts” alól, és futtasd! Mit csinál a robot, és miért?<br>2. Tegyél két negyzet blokkot egymás alá. Hány négyzetet látsz?<br>3. A két negyzet közé tegyél egy „move left: 100 for 180 degrees” blokkot. Mit rajzol most a robot?',
+      },
+    },
+    {
+      id: 'k6',
+      title: 'A dobogó',
+      story: 'Versenyt rendezünk, kell egy dobogó! A robot rajzolja meg: alul 3 négyzet, rajtuk középen 2, legfelül 1. A negyzet szót hatszor kell kimondani, közben pedig a robotnak mindig a jó helyre kell állnia.',
+      learn: ['Ugyanazt a szót többször kimondani', 'Útvonaltervezés: hogyan jut el a robot a következő négyzet sarkába?', 'Ha egy mozdulatsor ismétlődik, abból is lehet új szó!'],
+      rules: [
+        { t: 'A négyzet mindig ugyanott ér véget', d: 'A <code>negyzet()</code> a bal alsó sarokból indul felfelé nézve, és ugyanoda ér vissza, ugyanúgy nézve. Ezért mielőtt kimondod, mindig a következő négyzet bal alsó sarkába kell állnod, felfelé nézve.' },
+        { t: 'Fél négyzet = 7,5 cm', d: 'A felső sorok fél négyzettel beljebb kezdődnek. A négyzet oldala 15 cm (150 mm), a fele 7,5 cm (75 mm).' },
+        { t: 'Ha valamit kétszer leírsz, nevezd el!', d: 'Ha azt veszed észre, hogy ugyanazokat a sorokat már másodszor írod le, abból is csinálj új szót! Hogy mi legyen a neve, azt te döntöd el.' },
+      ],
+      python: {
+        code: "from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# A szó, amit már ismersz\ndef negyzet():\n    for i in range(4):\n        robot.straight(150)\n        robot.turn(90)\n\n# 1. sor: alul három négyzet egymás mellett\nnegyzet()\n# ... innen folytasd: hogyan jutsz át a következő négyzet sarkába?\n\n# 2. sor: két négyzet, fél négyzettel (75 mm) beljebb\n\n# 3. sor: legfelül egy négyzet, középen\n",
+        explain: [
+          ['def negyzet(): …', 'A múltkori szó. Egyszer tanítjuk meg, aztán annyiszor mondjuk ki, ahányszor kell: a dobogóhoz összesen hatszor.'],
+          ['negyzet()', 'Az első négyzet bal alul. A robot a végén visszaér a bal alsó sarokba, és megint felfelé néz.'],
+          ['# ... innen folytasd', 'A te feladatod: a következő négyzet 15 cm-rel jobbra kezdődik. Hogyan jutsz oda úgy, hogy utána megint felfelé nézz? Fordulj, menj, fordulj vissza!'],
+          ['# 2. sor, # 3. sor', 'A felső sorok egy négyzettel (150 mm) feljebb és fél négyzettel (75 mm) beljebb kezdődnek.'],
+        ],
+        challenge: 'Rajzold meg a teljes dobogót! A rajzlapon a halványkék dobogóra kell rárajzolnod, és ne legyen kilógó vonal.<br>⭐ Csillagos feladat: tanítsd meg a jobbra lépést is új szóként (például <code>def jobbra_lep():</code>). Hány sorral lett rövidebb a programod?',
+      },
+      blocks: {
+        code: [['events', 'when program starts'], ['movement', 'set movement motors to A+B'], ['movement', 'set 1 motor rotation to 17.5 cm'], ['myblocks', 'negyzet'], ['gap'], ['define', 'define negyzet'], ['control', 'repeat 4', 1], ['movement', 'move ↑ for 15 cm', 2], ['movement', 'move right: 100 for 180 degrees', 2]],
+        explain: [
+          ['define negyzet', 'A múltkori saját blokk. Egyszer kell megcsinálni, aztán annyiszor használod, ahányszor kell: a dobogóhoz hatszor.'],
+          ['negyzet', 'Az első négyzet bal alul. A robot a végén visszaér a bal alsó sarokba, és megint felfelé néz.'],
+          ['ami ezután jön', 'A te feladatod: a következő négyzet 15 cm-rel jobbra kezdődik. Fordulj jobbra (180 kerékfok), menj 15 cm-t, fordulj vissza balra, és jöhet a következő negyzet. A felső sorok 15 cm-rel feljebb és 7,5 cm-rel beljebb kezdődnek.'],
+        ],
+        challenge: 'Rajzold meg a teljes dobogót! A rajzlapon a halványkék dobogóra kell rárajzolnod, és ne legyen kilógó vonal.<br>⭐ Csillagos feladat: csinálj saját blokkot a jobbra lépésből is! Hány blokkal lett rövidebb a programod?',
+      },
+    },
+    {
+      id: 'k7',
+      title: 'Ébred a farm: felvesz és lerak',
+      story: 'A házi WRO pályán a robot kosarakat, mérleget, ládákat és terményeket hord a helyükre. Amikor felvesz valamit, zölden világít, amikor lerak, kéken. Először kézzel írjuk meg, aztán észrevesszük, mit ismétlünk.',
+      learn: ['Hogyan jelez a robot a bírónak?', 'Hogyan pontoz a bíró a szimulátorban?', 'Saját parancs a versenyen: felvesz() és lerak()'],
+      rules: [
+        { t: 'A bíró szeme', d: 'A robotnak még nincs fogókarja, ezért jelez: zöld fény és 1 mp állás = „felveszem”, kék fény és állás = „lerakom”. A bíró azt nézi, hol van ilyenkor a robot elején a piros mutató vége.' },
+        { t: 'Egyszerre legfeljebb kettő', d: 'A robot egyszerre legfeljebb két dolgot vihet magával. Amit elsőnek vett fel, azt teszi le elsőnek.' },
+        { t: 'Hányszor írtad le?', d: 'Számold meg, hányszor írtad le a zöld fény, csipogás, várakozás hármast! Ha többször, itt az ideje új szót tanítani a robotnak.' },
+      ],
+      python: {
+        code: "from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction, Color\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# 1. Odamegyünk a jobb oldali kosárhoz (K2)\nrobot.turn(7.6)\nrobot.straight(258)\n\n# FELVESZEM! – jelzés a bírónak\nhub.light.on(Color.GREEN)\nhub.speaker.beep(800, 200)\nwait(1000)\n\n# 2. Elvisszük a bal felső parcellára, a madárijesztő mellett\nrobot.turn(17.3)\nrobot.straight(370)\n\n# LERAKOM! – jelzés a bírónak\nhub.light.on(Color.BLUE)\nhub.speaker.beep(400, 200)\nwait(1000)\n\n# 3. Most te jössz: hozd el a másik kosarat (K1) a középső parcellára!\n",
+        explain: [
+          ['robot.turn(7.6), robot.straight(258)', 'Odaállunk a jobb oldali kosárhoz (K2). A számokat a pálya Célzó eszközével mértük ki: mennyit kell fordulni, és mennyit menni.'],
+          ['hub.light.on(Color.GREEN)', 'A hub középső gombja zöldre vált: „Felveszem!”'],
+          ['hub.speaker.beep(800, 200)', 'Egy magas csipogás, hogy halljuk is.'],
+          ['wait(1000)', 'A robot 1 másodpercig áll. A bíró csak akkor fogadja el, ha a robot közben nem mozdul.'],
+          ['robot.turn(17.3), robot.straight(370)', 'Elvisszük a kosarat a bal felső parcellára, a madárijesztő mellett. Vigyázat: ha a robot hozzáér, elvész a bónusz!'],
+          ['hub.light.on(Color.BLUE) …', 'Ugyanez kékkel: „Lerakom!” A kosár a mutató vége alá kerül, és a bíró pontozza.'],
+        ],
+        challenge: '1. Hozd el a másik kosarat (K1) is a középső parcellára! Ehhez újra le kell írnod a felvevő és a lerakó sorokat.<br>2. Számold meg, hányszor írtad le ugyanazt! Tanítsd meg a robotnak a <code>felvesz()</code> és a <code>lerak()</code> szót, és cseréld le velük az ismétlődő sorokat. Ugyanannyi pontot kell kapnod, mint előtte!',
+      },
+      blocks: {
+        code: [['events', 'when program starts'], ['movement', 'set movement motors to A+B'], ['movement', 'set 1 motor rotation to 17.5 cm'], ['movement', 'move right: 100 for 15.2 degrees'], ['movement', 'move ↑ for 25.8 cm'], ['light', 'set Center Button light to green'], ['sound', 'play beep 72 for 0.2 seconds'], ['control', 'wait 1 seconds'], ['movement', 'move right: 100 for 34.6 degrees'], ['movement', 'move ↑ for 37 cm'], ['light', 'set Center Button light to blue'], ['sound', 'play beep 60 for 0.2 seconds'], ['control', 'wait 1 seconds']],
+        explain: [
+          ['move right … 15.2 degrees, move ↑ 25.8 cm', 'Odaállunk a jobb oldali kosárhoz (K2). A számokat a pálya Célzó eszközével mértük ki. A fordulásnál kerékfok van, ezért a robotfok kétszerese.'],
+          ['set Center Button light to green', 'A középső gomb zöldre vált: „Felveszem!”'],
+          ['wait 1 seconds', 'A robot 1 másodpercig áll. A bíró csak akkor fogadja el, ha a robot közben nem mozdul.'],
+          ['move right … 34.6 degrees, move ↑ 37 cm', 'Elvisszük a kosarat a bal felső parcellára, a madárijesztő mellett.'],
+          ['set Center Button light to blue', 'Ugyanez kékkel: „Lerakom!” A kosár a mutató vége alá kerül.'],
+        ],
+        challenge: '1. Hozd el a másik kosarat (K1) is a középső parcellára!<br>2. Számold meg, hányszor raktad le ugyanazt a három blokkot! Csinálj belőlük saját blokkot (felvesz és lerak), és cseréld le velük az ismétlődő blokkokat. Ugyanannyi pontot kell kapnod!',
       },
     },
   ];

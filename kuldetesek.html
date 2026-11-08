@@ -35,13 +35,20 @@
   .blk.events { background: #FFBF00; color: #1D2B44; border-radius: 20px 20px 8px 8px; padding-top: 14px; }
   .blk.movement { background: #E0459B; } .blk.motors { background: #2F6FED; } .blk.light { background: #8A5CF6; }
   .blk.sound { background: #C94FCB; } .blk.control { background: #E3A008; } .blk.sensors { background: #18A3B8; }
-  .blk.indent { margin-left: 22px; }
+  .blk.myblocks { background: #FF6680; }
+  .blk.define { background: #FF6680; border-radius: 20px 20px 8px 8px; padding-top: 14px; }
+  .blk.gap { height: 18px; padding: 0; background: none; }
+  .warmup { background: #EEF0FF; }
+  .warmup h2 { font-size: 28px; margin-bottom: 4px; }
+  .warmup .wgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 24px; align-items: start; margin-top: 14px; }
+  .warmup ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 17px; }
+  .warmup code { background: #fff; border-radius: 6px; padding: 1px 6px; font-size: 14px; }
   .challenge { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; background: #E8F8EF; }
   .challenge .txt { flex: 1 1 420px; font-size: 18px; }
   .challenge h2 { font-size: 26px; margin-bottom: 4px; }
   .switch { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 700; color: var(--muted); }
   .done-note { font-weight: 800; color: var(--green-d); }
-  @media (max-width: 900px) { .mission-list, .rules, .codewrap { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; } }
+  @media (max-width: 900px) { .mission-list, .rules, .codewrap, .warmup .wgrid { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; } }
 </style>
 </head>
 <body>
@@ -75,7 +82,7 @@
 
   function codeBlock(v, mode) {
     if (mode === 'blocks') {
-      return `<div class="bstack" aria-label="Blokkos program">${v.code.map(([cat, t, ind]) => `<div class="blk ${cat}${ind ? ' indent' : ''}">${esc(t)}</div>`).join('')}</div>`;
+      return `<div class="bstack" aria-label="Blokkos program">${v.code.map(([cat, t, ind]) => cat === 'gap' ? '<div class="blk gap"></div>' : `<div class="blk ${cat}" style="margin-left:${(ind || 0) * 22}px">${esc(t)}</div>`).join('')}</div>`;
     }
     return `<pre class="code">${esc(v.code)}</pre>`;
   }
@@ -93,6 +100,8 @@
         <p>${m.story}</p>
         <ul class="learn">${m.learn.map((l) => `<li>${l}</li>`).join('')}</ul>
       </div>
+      ${m.warmup ? `<section class="card warmup" aria-label="Óra eleji játék"><h2>🎲 ${m.warmup.title}</h2><p style="margin:0;font-size:17px">${m.warmup.intro}</p>
+        <div class="wgrid"><pre class="code">${esc(m.warmup.board)}</pre><ol>${m.warmup.steps.map((x) => `<li>${x}</li>`).join('')}</ol></div></section>` : ''}
       <section aria-label="Titkos szabályok"><h2 style="font-size:28px;margin:0 0 14px 4px">A titkos kódfejtő szabályok</h2>
         <div class="rules">${m.rules.map((r) => `<div class="rule"><h3>${r.t}</h3><p>${r.d}</p></div>`).join('')}</div></section>
       <section class="card">

@@ -178,7 +178,7 @@
   }
 
   // Egy program lefuttatása. pyodide: betöltött Pyodide, shimSource: a pybricks_shim.py szövege.
-  // Visszaad: { frames, events, error, errorLine, timeout }
+  // Visszaad: { frames, events, error, errorLine, timeout, lint }
   async function runProgram(pyodide, shimSource, code, simOptions, sampler) {
     const sim = new Sim.Simulation(simOptions);
     if (sampler) sim.sampleColor = sampler;
@@ -200,7 +200,13 @@ _m
 `);
     pyodide.runPython(shimSource, { globals: shimMod.__dict__ });
     const runner = shimMod.__dict__.get('_run_user_program');
-    let error = null, errorLine = 0, timeout = false;
+    let error = null, errorLine = 0, timeout = false, lint = [];
+    try {
+      const linter = shimMod.__dict__.get('_lint_user_program');
+      const lr = linter(code);
+      lint = lr.toJs();
+      lr.destroy && lr.destroy(); linter.destroy && linter.destroy();
+    } catch (e) { lint = []; }
     try {
       const res = runner(code, LINE_LIMIT);
       const arr = res.toJs();
@@ -216,7 +222,7 @@ _m
     if (timeout) sim.event('print', { text: '⏱ A futás elérte a 3 perces korlátot, a szimulátor leállította.' });
     if (error) sim.event('error', { text: error, line: errorLine });
     sim.event('end');
-    return { frames: sim.frames, events: sim.events, error, errorLine, timeout, duration: sim.t, final: { x: sim.x, y: sim.y, heading: sim.heading } };
+    return { frames: sim.frames, events: sim.events, error, errorLine, timeout, lint, duration: sim.t, final: { x: sim.x, y: sim.y, heading: sim.heading } };
   }
 
   return { runProgram, createApi, glyph, LINE_LIMIT };

@@ -171,6 +171,16 @@
       const next = starts[0].getNextBlock();
       main = next ? gen.blockToCode(next) : '';
     }
+    // megírt, de sehol nem használt saját blokk (a „kimondás” hiányzik)
+    const used = new Set();
+    const live = [];
+    if (starts[0]) live.push(...starts[0].getDescendants(false));
+    tops.filter((b) => b.type === 'procedures_defnoreturn').forEach((d) => live.push(...d.getDescendants(false)));
+    live.filter((b) => b.type === 'procedures_callnoreturn' && b.isEnabled()).forEach((b) => used.add(b.getFieldValue('NAME')));
+    tops.filter((b) => b.type === 'procedures_defnoreturn').forEach((d) => {
+      const nm = d.getFieldValue('NAME');
+      if (!used.has(nm)) warnings.push('Megcsináltad a(z) „' + nm + '” saját blokkot, de sehol nem használod, ezért nem fut le. Húzd ki a Saját blokkok közül a(z) „' + nm + '” blokkot, és tedd a „when program starts” alá!');
+    });
     let code = gen.finish(main);
     code = 'from _spike_blocks import *\n' + code;
     return { code, warnings };
@@ -255,6 +265,11 @@
   const define = (name, steps, x, y) => B('procedures_defnoreturn', { NAME: name }, null, { x, y, inputs: { STACK: { block: chain(steps) } } });
   const call = (name) => B('procedures_callnoreturn', null, null, { extraState: { name } });
 
+  const fwd = (cm) => B('spike_move_for', { DIR: 'fwd', UNIT: 'cm' }, { N: n(cm) });
+  const steer = (side, deg) => B('spike_steer_for', { SIDE: side, UNIT: 'degrees' }, { S: n(100), N: n(deg) });
+  // 15 cm-es négyzet: 180 kerékfok = 90 fokos robotfordulás
+  const negyzetDef = (x, y) => define('negyzet', [B('spike_repeat', null, { N: n(4), DO: { block: chain([fwd(15), steer('right', 180)]) } })], x, y);
+
   const SAMPLES = {
     k1: { label: 'Az első csipogás (1. küldetés)', ws: { blocks: { languageVersion: 0, blocks: [Object.assign(B('spike_start', null, null, { x: 30, y: 30 }), { next: { block: chain([
       B('spike_write', null, { T: { shadow: { type: 'text', fields: { TEXT: '3' } } } }),
@@ -270,14 +285,27 @@
         B('spike_steer_for', { SIDE: 'right', UNIT: 'degrees' }, { S: n(100), N: n(180) }),
       ]) } }),
     ]) },
-    wro: { label: 'Felvesz és lerak (házi WRO)', ws: program([
-      B('spike_move_for', { DIR: 'fwd', UNIT: 'cm' }, { N: n(20) }),
-      call('felvesz'),
-      B('spike_move_for', { DIR: 'back', UNIT: 'cm' }, { N: n(10) }),
-      call('lerak'),
+    k5: { label: 'A robot új szót tanul: négyzet (5. küldetés)', ws: program([call('negyzet')], [negyzetDef(420, 30)]) },
+    k6: { label: 'Dobogó – kezdés (6. küldetés)', ws: program([call('negyzet')], [negyzetDef(420, 30)]) },
+    k7: { label: 'Ébred a farm – kézzel (7. küldetés)', ws: program([
+      steer('right', 15.2), fwd(25.8),
+      B('spike_center_light', { COLOR: 'GREEN' }), B('spike_beep', null, { NOTE: n(72), N: n(0.2) }), B('spike_wait', null, { N: n(1) }),
+      steer('right', 34.6), fwd(37),
+      B('spike_center_light', { COLOR: 'BLUE' }), B('spike_beep', null, { NOTE: n(60), N: n(0.2) }), B('spike_wait', null, { N: n(1) }),
+    ]) },
+    dobogo: { label: '🔑 TANÁRI: dobogó – teljes megoldás', teacher: true, ws: program([
+      call('negyzet'), call('jobbra_lep'), call('negyzet'), call('jobbra_lep'), call('negyzet'),
+      fwd(15), steer('left', 180), fwd(22.5), steer('right', 180),
+      call('negyzet'), call('jobbra_lep'), call('negyzet'),
+      fwd(15), steer('left', 180), fwd(7.5), steer('right', 180),
+      call('negyzet'),
+    ], [negyzetDef(420, 30), define('jobbra_lep', [steer('right', 180), fwd(15), steer('left', 180)], 420, 260)]) },
+    wro: { label: '🔑 TANÁRI: farm – felvesz és lerak saját blokkal', teacher: true, ws: program([
+      steer('right', 15.2), fwd(25.8), call('felvesz'),
+      steer('right', 34.6), fwd(37), call('lerak'),
     ], [
-      define('felvesz', [B('spike_center_light', { COLOR: 'GREEN' }), B('spike_beep', null, { NOTE: n(72), N: n(0.2) }), B('spike_wait', null, { N: n(1) })], 380, 30),
-      define('lerak', [B('spike_center_light', { COLOR: 'BLUE' }), B('spike_beep', null, { NOTE: n(60), N: n(0.2) }), B('spike_wait', null, { N: n(1) })], 380, 230),
+      define('felvesz', [B('spike_center_light', { COLOR: 'GREEN' }), B('spike_beep', null, { NOTE: n(72), N: n(0.2) }), B('spike_wait', null, { N: n(1) })], 420, 30),
+      define('lerak', [B('spike_center_light', { COLOR: 'BLUE' }), B('spike_beep', null, { NOTE: n(60), N: n(0.2) }), B('spike_wait', null, { N: n(1) })], 420, 230),
     ]) },
   };
 

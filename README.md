@@ -1,8 +1,8 @@
 # Kódfejtő Műhely
 
 A Diákszempont robotika tehetséggondozó foglalkozásának weboldala.
-Ebben a verzióban: a **virtuális pálya** (`palya/`), egy böngészőben futó
-SPIKE Prime szimulátor Pybricks Pythonhoz.
+Főoldal, küldetések és a **virtuális pálya** (`palya/`): böngészőben futó
+SPIKE Prime szimulátor Pybricks Pythonhoz és SPIKE App blokkokhoz.
 
 ## Közzététel GitHub Pages-en
 
@@ -15,13 +15,19 @@ SPIKE Prime szimulátor Pybricks Pythonhoz.
 
 | Fájl | Mi ez |
 | --- | --- |
+| `index.html` | főoldal: küldetés-térkép, jelvények, kabala |
+| `kuldetesek.html` | a küldetések (órák) oldala |
+| `assets/common.css`, `assets/common.js` | közös stílus, csapat, avatár, jelvények |
+| `assets/lessons.js` | a küldetések szövege és programjai (ezt szerkeszd, ha új óra jön) |
 | `palya/index.html` | a szimulátor oldala |
 | `palya/sim.js` | szimulációs mag: robotmodell, mozgás, falak, szenzorok |
 | `palya/runtime.js` | a Python és a szimulátor összekötése, idővonal |
 | `palya/pybricks_shim.py` | az ál-pybricks csomag (ezt szerkeszd) |
 | `palya/pybricks_shim.js` | a fenti generált változata – módosítás után: `python3 palya/build_shim.py` |
-| `palya/ui.js` | a felület: szerkesztő, pályarajz, lejátszó, hub, konzol |
-| `palya/palya1.png`, `palya2.png` | a pályák képe, 1 képpont = 1 mm |
+| `palya/ui.js` | a felület: szerkesztő, pályarajz, lejátszó, hub, konzol, mérőeszközök |
+| `palya/blocks.js` | a blokkos mód (SPIKE App szóblokkok) |
+| `palya/judge.js` | a házi WRO bíró (Ébred a farm): felvesz/lerak, pontozólap |
+| `palya/palya1.png`, `palya2.png`, `rajzlap.png` | a pályák képe, 1 képpont = 1 mm |
 
 ## A robot méretei
 
@@ -30,3 +36,9 @@ BECSÜLT értékek; a valódi Driving Base 2 lemérése után itt kell átírni 
 
 Portkiosztás (iskolai szabvány): A = bal motor, B = jobb motor,
 C = színszenzor, D = távolságérzékelő, E–F = szabad.
+
+## Tanári mód
+
+A `palya/index.html?tanar` címmel megnyitva a mintalistában megjelennek a 🔑 TANÁRI minták (dobogó teljes megoldás, farm saját parancsokkal). A böngésző megjegyzi; kikapcsolás: `palya/index.html?tanar=0`.
+
+A dobogó négyzetének oldala: `palya/ui.js`, `PODIUM_SIDE` (mm) – a mintakódokban a 150-et is át kell írni.
