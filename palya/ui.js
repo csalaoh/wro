@@ -18,6 +18,8 @@
 
   SAMPLES.k3 = 'from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\nrobot.settings(straight_speed=240)\n\nrobot.straight(200)\nrobot.turn(90)\n';
 
+  SAMPLES.wro = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction, Color\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nrobot = DriveBase(Motor(Port.A, Direction.COUNTERCLOCKWISE), Motor(Port.B), 56, 112)\n\n# A bírónak szóló jelzések (házi WRO, 4.4 pont)\ndef felvesz():\n    hub.light.on(Color.GREEN)\n    hub.speaker.beep(800, 200)\n    wait(1000)\n\ndef lerak():\n    hub.light.on(Color.BLUE)\n    hub.speaker.beep(400, 200)\n    wait(1000)\n\n# Odamegyünk a jobb oldali kosárhoz (K2), és felvesszük\nrobot.turn(7.6)\nrobot.straight(258)\nfelvesz()\n\n# Most te jössz: vidd a kosarat a bal felső parcellára, és ott: lerak()\n';
+
   // A küldetések kiinduló programja (a Küldetések oldal „Kipróbálom a pályán” gombja: #k2-python)
   const MISSION_START = {
     k1: { python: 'beep', blocks: 'k1' },
@@ -47,6 +49,7 @@
     play: null, pose: null,
     tape: [], tapeFromRobot: false, ang: null, aim: null, dragging: false,
     audio: null,
+    wro: null, // házi WRO küldetés állapota (ha be van kapcsolva)
     mode: store.get('mode', store.get('group', '') === 'blokk3' ? 'blocks' : 'python'), ws: null, lastBlock: null,
   };
 
@@ -98,7 +101,7 @@
       ta.dispatchEvent(new Event('input'));
     }
   });
-  const PY_SAMPLE_LABELS = { square: 'Bűvös négyzet (2. óra)', gyro: 'Négyzet giroszkóppal', beep: 'Első csipogás (1. óra)', color: 'Mit lát a színszenzor?' };
+  const PY_SAMPLE_LABELS = { square: 'Bűvös négyzet (2. óra)', gyro: 'Négyzet giroszkóppal', beep: 'Első csipogás (1. óra)', color: 'Mit lát a színszenzor?', wro: 'Házi WRO: felvesz és lerak' };
   function fillSamples() {
     const sel = $('sampleSel');
     const list = state.mode === 'blocks'
@@ -170,7 +173,7 @@
   $('tabPy').addEventListener('click', () => { stopPlayback(false); setMode('python'); });
   $('tabBlk').addEventListener('click', () => { stopPlayback(false); setMode('blocks'); });
   window.addEventListener('resize', () => { if (state.ws && state.mode === 'blocks') Blockly.svgResize(state.ws); });
-  function highlight(id) { if (state.ws) { try { state.ws.highlightBlock(id); } catch (e) { /* törölt blokk */ } } }
+  function markBlock(id) { if (state.ws) { try { state.ws.highlightBlock(id); } catch (e) { /* törölt blokk */ } } }
 
 
   // ------------------------------------------------------------ konzol, hub
@@ -489,6 +492,7 @@
     const playT = state.play ? state.play.t : (state.result ? Infinity : -1);
     if ($('optTrail').checked && state.result && state.result.mat === state.mat) drawPath(state.result.frames, playT, '#2F6FED', false);
     const pose = state.pose || state.starts[state.mat];
+    drawWro(pose);
     drawRobot(pose, 1);
     drawTape();
     drawProtractor();
@@ -643,14 +647,107 @@
 
   $('matSel').addEventListener('change', (e) => {
     stopPlayback(false);
-    state.mat = e.target.value; store.set('mat', state.mat);
-    state.pose = null; state.result = null; state.tape = []; state.ang = null;
+    const v = e.target.value;
+    setWro(v === 'wro1');
+    state.mat = v === 'wro1' ? 'palya1' : v; store.set('mat', state.mat);
+    state.pose = null; state.result = null; state.ghost = null; state.tape = []; state.ang = null;
     fitCanvas(); render();
   });
+
+  // ------------------------------------------------------------ házi WRO: Ébred a farm
+  const J = window.KodfejtoJudge;
+  const CROP_COLORS = { RED: '#E8343C', YELLOW: '#FFD400', BLACK: '#1D2B44' };
+  function setWro(on) {
+    store.set('wro', !!on);
+    $('wroPanel').hidden = !on;
+    if (on) newDraw(store.get('wroOrder', null)); else state.wro = null;
+  }
+  function newDraw(order) {
+    order = order || J.draw();
+    store.set('wroOrder', order);
+    state.wro = { order, cards: J.initialCards(order), judge: null, ti: 0, hits: {} };
+    $('wroOrder').innerHTML = order.map((c, i) => `<span class="crop" style="background:${CROP_COLORS[c]}" title="${i + 1}. ${J.CROP_NAMES[c]}"></span>`).join('');
+    $('wroOrderTxt').textContent = 'Fentről lefelé: ' + order.map((c) => J.CROP_NAMES[c]).join(', ');
+    $('wroScore').textContent = '';
+    $('wroSheetBtn').hidden = true;
+  }
+  function resetWroCards() { if (state.wro) { state.wro.cards = J.initialCards(state.wro.order); state.wro.ti = 0; state.wro.hits = {}; } }
+  $('wroDrawBtn').addEventListener('click', () => { stopPlayback(false); state.pose = null; state.result = null; newDraw(); render(); log('🎲 Új sorsolás: ' + state.wro.order.map((c) => J.CROP_NAMES[c]).join(', ') + ' (fentről lefelé).', 'c-hint'); });
+  $('optZones').addEventListener('change', render);
+  $('wroSheetBtn').addEventListener('click', showSheet);
+  $('sheetClose').addEventListener('click', () => $('sheetDlg').close());
+
+  // a bírói idővonal lejátszása (felvesz, lerak, ütközés)
+  function applyJudge(t) {
+    const w = state.wro;
+    if (!w || !w.judge) return;
+    while (w.ti < w.judge.timeline.length && w.judge.timeline[w.ti].t <= t) {
+      const e = w.judge.timeline[w.ti++];
+      log('⚖ ' + e.text, e.type === 'hit' || e.type === 'note' ? 'c-err' : 'c-hint');
+      const k = e.id && w.cards.find((c) => c.id === e.id);
+      if (e.type === 'pick' && k) k.carried = true;
+      if (e.type === 'drop' && k) { k.carried = false; k.x = e.x; k.y = e.y; }
+      if (e.type === 'hit') w.hits[e.id] = true;
+    }
+  }
+
+  function drawWro(pose) {
+    const w = state.wro;
+    if (!w) return;
+    const s = scale();
+    const rectPx = (z) => { const [x0, y0] = toPx(z.x0, z.y1); return [x0, y0, (z.x1 - z.x0) * s, (z.y1 - z.y0) * s]; };
+    ctx.save();
+    if ($('optZones').checked) {
+      ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+      const zs = [['parcelLeft', '#8A5CF6'], ['parcelMid', '#8A5CF6'], ['shop', '#18A3B8'], ['market', '#FF9F43'], ['red', '#E8343C'], ['black', '#1D2B44'], ['yellow', '#B8860B']];
+      zs.forEach(([k, c]) => { ctx.strokeStyle = c; J.ZONES[k].forEach((z) => ctx.strokeRect(...rectPx(z))); });
+      ctx.strokeStyle = '#ffffff'; ctx.strokeRect(...rectPx(J.ZONES.start));
+      ctx.setLineDash([]);
+    }
+    // védett elemek
+    J.PROTECTED.forEach((p) => {
+      const [x, y, ww, hh] = rectPx(p.zone);
+      ctx.fillStyle = w.hits[p.id] ? '#FF5A5F' : '#8A94A6';
+      ctx.strokeStyle = '#1D2B44'; ctx.lineWidth = 1.5;
+      ctx.fillRect(x, y, ww, hh); ctx.strokeRect(x, y, ww, hh);
+      if (w.hits[p.id]) { ctx.fillStyle = '#fff'; ctx.font = '800 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', x + ww / 2, y + hh / 2); }
+    });
+    // kártyák (a robotnál lévők a mutató mellett, kicsiben)
+    const tip = (() => { const h = pose.heading * Math.PI / 180, P = Sim.ROBOT_DEFAULT.pointer; return [pose.x + Math.sin(h) * P, pose.y + Math.cos(h) * P]; })();
+    let carriedN = 0;
+    w.cards.forEach((k) => {
+      let cx = k.x, cy = k.y, size = J.CARD;
+      if (k.carried) { cx = tip[0] + 18 + carriedN * 30; cy = tip[1] + 18; size = 26; carriedN++; }
+      const [px, py] = toPx(cx, cy), half = size * s / 2;
+      ctx.fillStyle = k.color; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.fillRect(px - half, py - half, half * 2, half * 2); ctx.strokeRect(px - half, py - half, half * 2, half * 2);
+      ctx.fillStyle = k.color === '#FFD400' ? '#1D2B44' : '#ffffff';
+      ctx.font = `800 ${Math.max(9, Math.round(13 * size / J.CARD))}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(k.label, px, py + 1);
+    });
+    ctx.restore();
+  }
+
+  function showSheet() {
+    const j = state.wro && state.wro.judge;
+    if (!j) return;
+    const titles = { 1: '1. Kosarak a parcellákra', 2: '2. A piac előkészítése', 3: '3. Termények a helyükre', 4: '4. Bónusz pontok' };
+    let html = '';
+    [1, 2, 3, 4].forEach((t) => {
+      html += `<tr class="sec"><td colspan="2">${titles[t]}</td></tr>`;
+      j.score.lines.filter((l) => l.task === t).forEach((l) => { html += `<tr><td>${l.text}</td><td class="pts">${l.pts}</td></tr>`; });
+    });
+    html += `<tr class="tot"><td>A futamon gyűjtött pontszám</td><td class="pts">${j.score.total} / ${j.score.max}</td></tr>`;
+    html += `<tr><td>Idő (csak tájékoztató)</td><td class="pts">${Math.round(state.result.duration / 1000)} mp</td></tr>`;
+    $('sheetBody').innerHTML = html;
+    $('sheetOrder').textContent = 'Termények sorrendje (fentről lefelé): ' + state.wro.order.map((c) => J.CROP_NAMES[c]).join(', ');
+    if (typeof $('sheetDlg').showModal === 'function') $('sheetDlg').showModal(); else $('sheetDlg').setAttribute('open', '');
+  }
   $('resetBtn').addEventListener('click', () => {
     stopPlayback(false);
     state.pose = null;
     if (state.result) { state.ghost = state.result; state.result = null; }
+    resetWroCards();
     resetHub();
     render();
   });
@@ -685,6 +782,12 @@
     }
     res.mat = state.mat;
     state.result = res;
+    if (state.wro) {
+      resetWroCards();
+      state.wro.judge = J.evaluate(res, state.wro.order, Sim.ROBOT_DEFAULT);
+      if (!state.wro.judge.startOk) log('⚖ A robot nem teljesen a rajtterületen állt (fehér keret). A versenyen ez szabálytalan rajt!', 'c-err');
+      $('wroScore').textContent = ''; $('wroSheetBtn').hidden = true;
+    }
     state.play = { t: 0, wall: performance.now(), speed: Number($('speedSel').value), fi: 0, ei: 0 };
     $('stopBtn').disabled = false;
     requestAnimationFrame(tick);
@@ -717,7 +820,7 @@
         } else { errLine = ev.line || 0; refreshEditor(); }
         break;
       }
-      case 'block': state.lastBlock = ev.id; highlight(ev.id); break;
+      case 'block': state.lastBlock = ev.id; markBlock(ev.id); break;
       case 'end': break;
     }
   }
@@ -728,6 +831,7 @@
     p.t = (now - p.wall) * p.speed;
     const r = state.result;
     while (p.ei < r.events.length && r.events[p.ei].t <= p.t) handleEvent(r.events[p.ei++]);
+    applyJudge(p.t);
     const [pose, fi] = poseAt(r.frames, Math.min(p.t, r.duration), p.fi);
     p.fi = fi;
     state.pose = pose;
@@ -742,22 +846,43 @@
   function finish() {
     const r = state.result;
     state.play = null;
-    if (!r.error) highlight(null);
+    if (!r.error) markBlock(null);
     state.pose = { x: r.final.x, y: r.final.y, heading: r.final.heading };
     $('stopBtn').disabled = true;
     $('runBtn').disabled = false;
     if (!r.error && !r.timeout) log('✓ Kész · ' + fmt(r.duration / 1000, 1) + ' mp', 'c-ok');
+    if (state.wro && state.wro.judge) {
+      applyJudge(Infinity);
+      const sc = state.wro.judge.score;
+      log('🏁 Pontszám: ' + sc.total + ' / ' + sc.max, 'c-ok');
+      $('wroScore').textContent = sc.total + ' / ' + sc.max + ' pont';
+      $('wroSheetBtn').hidden = false;
+      showSheet();
+    }
     render();
     updateTele(state.pose, r.duration);
   }
 
   function stopPlayback(announce) {
     if (!state.play) return;
+    state.lastStopT = state.play.t;
     state.play = null;
-    highlight(null);
+    markBlock(null);
     $('stopBtn').disabled = true;
     $('runBtn').disabled = !state.pyodide;
     if (announce) log('■ Megállítottad a robotot.', 'c-muted');
+    if (announce && state.wro && state.wro.judge && state.result) {
+      // A versenyen a „Stop” véget vet a futamnak: az addigi állapotot pontozzuk.
+      const t = state.lastStopT || 0;
+      const cut = Object.assign({}, state.result, { frames: state.result.frames.filter((f) => f.t <= t), events: state.result.events.filter((e) => e.t <= t) });
+      if (cut.frames.length) {
+        state.wro.judge = J.evaluate(cut, state.wro.order, Sim.ROBOT_DEFAULT);
+        state.result = Object.assign({}, state.result, { duration: t });
+        const sc = state.wro.judge.score;
+        log('🏁 Pontszám a megállításkor: ' + sc.total + ' / ' + sc.max, 'c-ok');
+        $('wroScore').textContent = sc.total + ' / ' + sc.max + ' pont'; $('wroSheetBtn').hidden = false;
+      }
+    }
     render();
   }
 
@@ -771,7 +896,8 @@
   ta.value = store.get('code', SAMPLES.square);
   refreshEditor();
   if (!Sim.MATS[state.mat]) state.mat = 'palya1';
-  $('matSel').value = state.mat;
+  $('matSel').value = store.get('wro', false) ? 'wro1' : state.mat;
+  if (store.get('wro', false)) { state.mat = 'palya1'; setWro(true); }
   fitCanvas();
   resetHub();
   setMode(state.mode === 'blocks' ? 'blocks' : 'python');
@@ -782,6 +908,7 @@
     const ms = MISSION_START[m[1]], mode = ms[m[2]] ? m[2] : 'python';
     setMode(mode);
     if (ms.mat && ms.mat !== state.mat) {
+      setWro(false);
       state.mat = ms.mat; store.set('mat', state.mat); $('matSel').value = state.mat; fitCanvas();
     }
     const key = ms[mode];

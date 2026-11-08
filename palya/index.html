@@ -85,6 +85,17 @@
   .row { display: flex; flex-wrap: wrap; gap: 6px; }
   .hint { font-size: 13px; color: var(--muted); line-height: 1.45; }
   .status { font-weight: 800; font-size: 14px; color: var(--muted); }
+  .crops { display: flex; gap: 6px; }
+  .crops .crop { width: 26px; height: 26px; border-radius: 6px; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); }
+  dialog#sheetDlg { border: 0; border-radius: 22px; padding: 0; width: min(620px, calc(100% - 32px)); color: var(--ink); }
+  dialog#sheetDlg::backdrop { background: rgba(29,43,68,.45); }
+  .sheet { padding: 24px 28px; }
+  .sheet h2 { margin: 0; font-family: 'Baloo 2', sans-serif; font-size: 28px; }
+  .sheet table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 15px; }
+  .sheet td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  .sheet td.pts { text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; white-space: nowrap; }
+  .sheet tr.sec td { font-weight: 800; padding-top: 14px; border-bottom: 2px solid var(--ink); }
+  .sheet tr.tot td { font-weight: 800; font-size: 18px; border-bottom: 3px double var(--ink); }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -102,6 +113,7 @@
     <select id="matSel">
       <option value="palya1">Pálya1 (farm)</option>
       <option value="palya2">Pálya2 (rács)</option>
+      <option value="wro1">Házi WRO: Ébred a farm</option>
     </select>
     <button class="btn btn-go" id="runBtn" disabled>▶ Indulj!</button>
     <button class="btn btn-stop" id="stopBtn" disabled>■ Állj!</button>
@@ -144,6 +156,18 @@
       <div class="loading" id="loading">A Python betöltése…<br>Az első alkalommal ez fél percig is tarthat.</div>
     </div>
     <div class="side">
+      <div class="card panel" id="wroPanel" hidden>
+        <h2>HÁZI WRO · ÉBRED A FARM</h2>
+        <div class="crops" id="wroOrder" aria-hidden="true"></div>
+        <p class="hint" id="wroOrderTxt" style="margin:6px 0 8px"></p>
+        <div class="row">
+          <button class="btn btn-plain btn-small" type="button" id="wroDrawBtn">🎲 Új sorsolás</button>
+          <button class="btn btn-plain btn-small" type="button" id="wroSheetBtn" hidden>Pontozólap</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-top:8px"><input type="checkbox" id="optZones"> Célterületek mutatása</label>
+        <div class="status" id="wroScore" style="font-size:20px;color:#1E8A55;margin-top:6px"></div>
+        <p class="hint" style="margin:6px 0 0">Felvétel: zöld fény + állj 1 mp-ig. Lerakás: kék fény + állj 1 mp-ig. A bíró a mutató végét figyeli.</p>
+      </div>
       <div class="card panel">
         <h2>MŰSZERFAL</h2>
         <div class="tele">
@@ -180,6 +204,12 @@
     </div>
   </section>
 </main>
+<dialog id="sheetDlg" aria-labelledby="sheetTitle"><div class="sheet">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 id="sheetTitle">Pontozólap</h2>
+  <button class="btn btn-plain btn-small" type="button" id="sheetClose">Bezárás</button></div>
+  <div class="hint" id="sheetOrder"></div>
+  <table><tbody id="sheetBody"></tbody></table>
+</div></dialog>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/blockly_compressed.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/blocks_compressed.js"></script>
@@ -187,6 +217,7 @@
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/msg/en.js"></script>
 <script src="blocks.js"></script>
 <script src="sim.js"></script>
+<script src="judge.js"></script>
 <script src="runtime.js"></script>
 <script src="pybricks_shim.js"></script>
 <script src="ui.js"></script>
