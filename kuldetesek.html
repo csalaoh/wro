@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Küldetések – Kódfejtő Műhely</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/common.css">
+<style>
+  .mission-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .mcard { display: flex; gap: 18px; align-items: center; text-decoration: none; color: var(--ink); }
+  .mnum { flex: none; width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 34px; color: #fff; }
+  .mcard h2 { font-size: 24px; }
+  .mcard p { margin: 4px 0 0; color: var(--muted); font-size: 15.5px; }
+  .stamp { display: inline-block; border: 3px solid var(--red-d); color: var(--red-d); font-weight: 800; font-size: 13px; letter-spacing: 2px; padding: 3px 10px; transform: rotate(-4deg); }
+  .hero { display: flex; flex-direction: column; gap: 12px; }
+  .hero .kicker { font-weight: 800; color: var(--blue); }
+  .hero h1 { font-size: 44px; }
+  .hero p { margin: 0; font-size: 19px; max-width: 760px; }
+  .learn { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 0; padding: 0; list-style: none; }
+  .learn li { background: var(--sky); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 15px; }
+  .rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .rule { background: #FFF6DB; border-radius: 20px; padding: 20px 22px; }
+  .rule h3 { font-size: 21px; margin-bottom: 6px; }
+  .rule p { margin: 0; font-size: 16px; }
+  .rule code, .explain code { background: #fff; border-radius: 6px; padding: 1px 6px; font-size: 14px; }
+  .codewrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  pre.code { margin: 0; background: #14203A; color: #E6EDF7; border-radius: 16px; padding: 18px 20px; font-size: 14px; line-height: 1.6; overflow-x: auto; }
+  .explain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .explain li { border-left: 5px solid var(--blue); padding: 4px 0 4px 14px; }
+  .explain .what { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; display: block; }
+  .bstack { display: flex; flex-direction: column; gap: 3px; }
+  .blk { align-self: flex-start; color: #fff; font-weight: 800; font-size: 15px; padding: 10px 16px; border-radius: 8px; }
+  .blk.events { background: #FFBF00; color: #1D2B44; border-radius: 20px 20px 8px 8px; padding-top: 14px; }
+  .blk.movement { background: #E0459B; } .blk.motors { background: #2F6FED; } .blk.light { background: #8A5CF6; }
+  .blk.sound { background: #C94FCB; } .blk.control { background: #E3A008; } .blk.sensors { background: #18A3B8; }
+  .blk.indent { margin-left: 22px; }
+  .challenge { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; background: #E8F8EF; }
+  .challenge .txt { flex: 1 1 420px; font-size: 18px; }
+  .challenge h2 { font-size: 26px; margin-bottom: 4px; }
+  .switch { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 700; color: var(--muted); }
+  .done-note { font-weight: 800; color: var(--green-d); }
+  @media (max-width: 900px) { .mission-list, .rules, .codewrap { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; } }
+</style>
+</head>
+<body>
+<header id="siteHeader"></header>
+<main class="page" id="content"></main>
+<footer id="siteFooter"></footer>
+<script src="assets/common.js"></script>
+<script src="assets/lessons.js"></script>
+<script>
+(function () {
+  'use strict';
+  const K = window.Kodfejto, M = window.KodfejtoMissions;
+  const COLORS = ['#2BB673', '#2F6FED', '#E0459B', '#8A5CF6', '#E3A008'];
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  K.header('missions');
+  const root = document.getElementById('content');
+
+  function groupMode() { const g = K.GROUPS[K.store.get('group', '')]; return g ? g.mode : 'python'; }
+  function visible(m) { return !(m.only && m.only !== groupMode()); }
+
+  function list() {
+    const done = K.badges();
+    root.innerHTML = `<div class="hero card"><span class="kicker">Küldetések</span><h1>Válassz küldetést!</h1>
+      <p>Minden küldetésben megtudsz egy titkot a robotról, és kapsz egy mini kihívást, amit a virtuális pályán is kipróbálhatsz.</p></div>
+      <div class="mission-list">${M.filter(visible).map((m, i) => `
+        <a class="card mcard" href="#${m.id}">
+          <span class="mnum" style="background:${done.includes(m.id) ? '#2BB673' : COLORS[i % COLORS.length]}">${done.includes(m.id) ? '✓' : i + 1}</span>
+          <span><h2>${m.title}</h2><p>${m.story}</p></span>
+        </a>`).join('')}</div>`;
+  }
+
+  function codeBlock(v, mode) {
+    if (mode === 'blocks') {
+      return `<div class="bstack" aria-label="Blokkos program">${v.code.map(([cat, t, ind]) => `<div class="blk ${cat}${ind ? ' indent' : ''}">${esc(t)}</div>`).join('')}</div>`;
+    }
+    return `<pre class="code">${esc(v.code)}</pre>`;
+  }
+
+  function detail(m, modeOverride) {
+    const mode = modeOverride || (m.only || groupMode());
+    const v = m[mode] || m.python;
+    const other = mode === 'python' ? 'blocks' : 'python';
+    const done = K.badges().includes(m.id);
+    const idx = M.indexOf(m) + 1;
+    root.innerHTML = `
+      <div class="hero card">
+        <span class="kicker">${idx}. küldetés · <span class="stamp">SZIGORÚAN TITKOS</span></span>
+        <h1>${m.title}</h1>
+        <p>${m.story}</p>
+        <ul class="learn">${m.learn.map((l) => `<li>${l}</li>`).join('')}</ul>
+      </div>
+      <section aria-label="Titkos szabályok"><h2 style="font-size:28px;margin:0 0 14px 4px">A titkos kódfejtő szabályok</h2>
+        <div class="rules">${m.rules.map((r) => `<div class="rule"><h3>${r.t}</h3><p>${r.d}</p></div>`).join('')}</div></section>
+      <section class="card">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px">
+          <h2 style="font-size:28px">${mode === 'blocks' ? 'A program blokkokkal' : 'A program Pythonban'}</h2>
+          ${m.only ? '' : `<div class="switch">Kíváncsi vagy a másik csapatra? <button class="btn btn-plain" type="button" id="otherBtn" style="min-height:42px">${other === 'blocks' ? 'Mutasd blokkal' : 'Mutasd Pythonban'}</button></div>`}
+        </div>
+        <div class="codewrap">${codeBlock(v, mode)}
+          <ul class="explain">${v.explain.map(([w, d]) => `<li><span class="what">${esc(w)}</span>${d}</li>`).join('')}</ul></div>
+      </section>
+      <section class="card challenge">
+        <div class="txt"><h2>Mini kihívás</h2>${v.challenge}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <a class="btn btn-blue" href="palya/index.html#${m.id}-${mode}">Kipróbálom a pályán</a>
+          ${done ? '<span class="done-note">✓ Megszerezted a jelvényt: ' + K.BADGES[m.id].name + '</span>' : `<button class="btn btn-green" type="button" id="doneBtn">Teljesítettem!</button>`}
+        </div>
+      </section>
+      <div><a href="kuldetesek.html#" style="font-weight:800">← Vissza a küldetésekhez</a></div>`;
+    const ob = document.getElementById('otherBtn');
+    if (ob) ob.onclick = () => detail(m, other);
+    const db = document.getElementById('doneBtn');
+    if (db) db.onclick = () => { K.earn(m.id); detail(m, mode); };
+    window.scrollTo(0, 0);
+  }
+
+  function route() {
+    const id = location.hash.slice(1);
+    const m = M.find((x) => x.id === id);
+    if (m) detail(m); else list();
+  }
+  window.addEventListener('hashchange', route);
+  route();
+  if (!K.store.get('group', '')) K.openSetup(() => location.reload());
+})();
+</script>
+</body>
+</html>
