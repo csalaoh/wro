@@ -41,6 +41,8 @@
   .pcard .s { font-size: 12.5px; color: var(--muted); font-weight: 700; }
   .chipx { display: inline-flex; align-items: center; gap: 6px; background: var(--sky); border-radius: 999px; padding: 4px 6px 4px 12px; font-weight: 800; font-size: 14px; margin: 2px; }
   .chipx button { border: 0; background: var(--white); border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: 800; }
+  .bview { height: 360px; border: 2px solid var(--line); border-radius: 12px; margin-top: 8px; overflow: hidden; }
+  details.py { margin-top: 8px; } details.py summary { cursor: pointer; font-weight: 800; color: var(--muted); font-size: 14.5px; }
   .warnbox { background: #FFF1D6; border-left: 6px solid var(--yellow-d); border-radius: 0 14px 14px 0; padding: 12px 16px; }
   @media print {
     body * { visibility: hidden; }
@@ -61,6 +63,11 @@
 <script src="assets/cloud.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/lessons.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/blockly_compressed.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/blocks_compressed.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/python_compressed.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/msg/en.js"></script>
+<script src="palya/blocks.js"></script>
 <script>
 (function () {
   'use strict';
@@ -142,6 +149,8 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
 
   // ------------------------------------------------------------ fülek
   function render() {
+    views.forEach((w) => { try { w.dispose(); } catch (e) { /* nem baj */ } });
+    views = [];
     const tabs = [['overview', 'Ki hol tart?'], ['students', 'Diákok'], ['unlocks', 'Feloldások'], ['backup', 'Mentés']];
     app.innerHTML = `<div class="tabs">${tabs.map(([k, t]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${t}</button>`).join('')}</div><div id="tab"></div>`;
     app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { S.tab = b.dataset.tab; render(); });
@@ -201,9 +210,12 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
         <div class="row" style="justify-content:space-between"><div><b>${esc(title(p.slot))}</b> · ${p.mode === 'blocks' ? 'blokk' : 'Python'}
           <span class="muted">· ${fmt(p.updated_at)} · ${p.runs}× futtatta</span></div>
           <button class="btn btn-blue btn-sm" data-run="${i}">▶ Megnyitás a pályán</button></div>
-        <pre class="code">${esc(p.code)}</pre></div>`).join('') : '<p class="muted">Még nem futtatott programot.</p>'}
+        ${p.mode === 'blocks' && p.blocks
+          ? `<div class="bview" id="bview${i}"></div><details class="py"><summary>A gép ezt futtatta a háttérben (Python)</summary><pre class="code">${esc(cleanPy(p.code))}</pre></details>`
+          : `<pre class="code">${esc(p.code)}</pre>`}</div>`).join('') : '<p class="muted">Még nem futtatott programot.</p>'}
     </div>`;
     el.querySelector('#closeD').onclick = () => { S.openStudent = null; render(); };
+    progs.forEach((p, i) => { if (p.mode === 'blocks' && p.blocks) showBlocks(document.getElementById('bview' + i), p.blocks); });
     el.querySelectorAll('[data-run]').forEach((b) => b.onclick = () => {
       const p = progs[+b.dataset.run];
       if (p.mode === 'blocks' && p.blocks) K.store.set('tryBlocks', p.blocks); else K.store.set('tryCode', p.code);
@@ -211,6 +223,31 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
     });
     el.scrollIntoView({ behavior: 'smooth' });
   }
+
+  // A blokkos program pontosan úgy, ahogy a diák megrakta (csak nézni lehet)
+  let views = [];
+  function showBlocks(div, json) {
+    if (!window.Blockly || !div) { if (div) div.outerHTML = '<p class="muted">A blokknézet nem töltődött be.</p>'; return; }
+    Blockly.Msg.PROCEDURES_DEFNORETURN_TITLE = 'define';
+    const ws = Blockly.inject(div, {
+      readOnly: true, renderer: 'zelos', media: '', sounds: false, trashcan: false,
+      zoom: { controls: false, wheel: true, startScale: 0.75, maxScale: 1.2, minScale: 0.3 },
+      move: { scrollbars: true, drag: true, wheel: false },
+      theme: Blockly.Theme.defineTheme('kodfejto-ro', { base: Blockly.Themes.Zelos, blockStyles: { procedure_blocks: { colourPrimary: '#FF6680', colourSecondary: '#FF8FA3', colourTertiary: '#D94B66' } }, fontStyle: { family: 'Nunito, sans-serif', weight: '700', size: 12 } }),
+    });
+    try { Blockly.serialization.workspaces.load(json, ws); } catch (e) { div.outerHTML = '<p class="muted">Ezt a blokkos programot nem tudom megjeleníteni.</p>'; ws.dispose(); return; }
+    // a magasság igazodjon a programhoz
+    const bb = ws.getBlocksBoundingBox();
+    const h = Math.min(560, Math.max(160, (bb.bottom - bb.top) * 0.75 + 50));
+    div.style.height = h + 'px';
+    Blockly.svgResize(ws);
+    ws.zoomToFit();
+    if (ws.scale > 0.85) ws.setScale(0.85);
+    ws.scrollCenter();
+    views.push(ws);
+  }
+  // a háttérben futó Pythonból kivesszük a blokk-kiemelő sorokat, hogy olvasható legyen
+  const cleanPy = (code) => code.split('\n').filter((l) => !/^\s*block\(.*\)\s*$/.test(l)).join('\n').replace(/\n{3,}/g, '\n\n');
 
   // ---- Diákok
   function randomPics() {
