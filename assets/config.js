@@ -13,6 +13,6 @@
  * A TITKOS kulcsot (secret / service_role) SOHA ne írd ide!
  */
 window.KODFEJTO_CONFIG = {
-  supabaseUrl: '',
-  supabaseKey: '',
+  supabaseUrl: 'https://jwfjsqadboegxrxgkupv.supabase.co',
+  supabaseKey: 'sb_publishable_jl6Y1TbTMsJcSFxJfxRzPA_r3N9zgyA',
 };
