@@ -950,6 +950,21 @@
   setMode(state.mode === 'blocks' ? 'blocks' : 'python');
   // Küldetés megnyitása a címből: #k2-python vagy #k2-blocks
   (function openMission() {
+    // a Kódszótár „Kipróbálom” gombja: #proba
+    if (location.hash === '#proba') {
+      const code = store.get('tryCode', null);
+      try { localStorage.removeItem('kodfejto.tryCode'); } catch (e) { /* nem baj */ }
+      try { history.replaceState(null, '', location.pathname); } catch (e) { /* nem baj */ }
+      if (!code) return;
+      setMode('python');
+      if (state.wro || state.mat === 'rajzlap') {
+        setWro(false); state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = state.mat;
+        state.pose = null; state.result = null; state.ghost = null; updateMatUi(); fitCanvas();
+      }
+      ta.value = code; errLine = 0; refreshEditor(); store.set('code', ta.value);
+      log('📖 Betöltöttem a szótár példáját. Nyomd meg az Indulj! gombot!', 'c-hint');
+      return;
+    }
     const m = /^#(k\d+)-(python|blocks)$/.exec(location.hash);
     if (!m || !MISSION_START[m[1]]) return;
     const ms = MISSION_START[m[1]], mode = ms[m[2]] ? m[2] : 'python';

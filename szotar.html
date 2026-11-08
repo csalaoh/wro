@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kódszótár – Kódfejtő Műhely</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/common.css">
+<style>
+  .hero { display: flex; flex-direction: column; gap: 14px; }
+  .hero .kicker { font-weight: 800; color: var(--blue); }
+  .hero h1 { font-size: 44px; }
+  .hero p { margin: 0; font-size: 19px; max-width: 780px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .search { flex: 1 1 320px; min-height: 52px; border: 3px solid var(--line); border-radius: 16px; padding: 0 18px; font: inherit; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .search:focus { outline: none; border-color: var(--blue); }
+  .seg { display: inline-flex; background: var(--sky); border-radius: 16px; padding: 4px; gap: 4px; }
+  .seg button { border: 0; background: none; min-height: 44px; padding: 0 16px; border-radius: 12px; font: inherit; font-weight: 800; font-size: 15.5px; color: var(--muted); cursor: pointer; }
+  .seg button.on { background: var(--white); color: var(--ink); box-shadow: 0 2px 0 var(--line); }
+  .cats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cat { border: 3px solid var(--line); background: var(--white); border-radius: 999px; min-height: 42px; padding: 0 16px; font: inherit; font-weight: 800; font-size: 15px; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .cat .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .cat.on { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .group-title { font-size: 28px; margin: 6px 0 -8px 4px; display: flex; align-items: center; gap: 10px; }
+  .group-title .dot { width: 16px; height: 16px; border-radius: 50%; }
+  .words { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .word { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 20px; }
+  .word.solo { grid-column: 1 / -1; }
+  .word h2 { font-size: 26px; }
+  .pair { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .pair.one { grid-template-columns: 1fr; }
+  .side .lbl { font-size: 12.5px; font-weight: 800; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px; display: block; }
+  pre.code { margin: 0; background: #14203A; color: #E6EDF7; border-radius: 14px; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6; overflow-x: auto; white-space: pre; }
+  .bstack { display: flex; flex-direction: column; gap: 3px; }
+  .blk { align-self: flex-start; color: #fff; font-weight: 800; font-size: 14.5px; padding: 9px 14px; border-radius: 8px; }
+  .blk.movement { background: #E0459B; } .blk.motors { background: #2F6FED; } .blk.light { background: #8A5CF6; }
+  .blk.sound { background: #C94FCB; } .blk.control { background: #E3A008; } .blk.sensors { background: #18A3B8; border-radius: 22px; }
+  .blk.events { background: #FFBF00; color: #1D2B44; border-radius: 20px 20px 8px 8px; }
+  .blk.myblocks { background: #FF6680; } .blk.define { background: #FF6680; border-radius: 20px 20px 8px 8px; padding-top: 13px; }
+  .noblk { background: var(--sky); border-radius: 14px; padding: 12px 14px; font-weight: 700; color: var(--muted); font-size: 15px; }
+  .what { margin: 0; font-size: 17px; }
+  .warn { background: #FFF1D6; border-left: 6px solid var(--yellow-d); border-radius: 0 14px 14px 0; padding: 10px 14px; font-size: 15.5px; }
+  .warn b { color: #8A5A00; }
+  .foot { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  .foot .learned { font-weight: 800; font-size: 14.5px; color: var(--muted); }
+  .btn-sm { min-height: 42px; padding: 0 18px; font-size: 15.5px; }
+  .empty { text-align: center; font-size: 19px; color: var(--muted); }
+  @media (max-width: 1000px) { .words { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .pair { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; } }
+</style>
+</head>
+<body>
+<header id="siteHeader"></header>
+<main class="page">
+  <div class="hero card">
+    <span class="kicker">Kódszótár</span>
+    <h1>Minden parancs egy helyen</h1>
+    <p>Itt megtalálod, amit a robotnak mondhatsz: blokkal és Pythonban, egymás mellett. Ha elfelejtetted, mi kell a zárójelbe, vagy miért pörög a robot, nézz ide!</p>
+    <div class="tools">
+      <label class="sr" for="q" style="position:absolute;left:-9999px">Keresés</label>
+      <input class="search" id="q" type="search" placeholder="Keress! Pl.: fordul, várj, szín, wait…" autocomplete="off">
+      <div class="seg" role="group" aria-label="Mit mutasson?">
+        <button type="button" data-m="blocks">Blokk</button>
+        <button type="button" data-m="both">Mindkettő</button>
+        <button type="button" data-m="python">Python</button>
+      </div>
+    </div>
+    <div class="cats" id="cats"></div>
+  </div>
+  <div id="list" style="display:flex;flex-direction:column;gap:26px"></div>
+</main>
+<footer id="siteFooter"></footer>
+<script src="assets/common.js"></script>
+<script src="assets/lessons.js"></script>
+<script src="assets/dictionary.js"></script>
+<script>
+(function () {
+  'use strict';
+  const K = window.Kodfejto, D = window.KodfejtoDictionary, M = window.KodfejtoMissions;
+  K.header('dict');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const g = K.GROUPS[K.store.get('group', '')];
+  const state = {
+    mode: K.store.get('dictMode', g && g.mode === 'blocks' ? 'blocks' : 'both'),
+    cat: '', q: '',
+  };
+  const catInfo = Object.fromEntries(D.CATS.map(([id, name, col]) => [id, { name, col }]));
+
+  // a keresés ékezet és kis-nagybetű nélkül
+  const norm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  function haystack(w) {
+    return norm([w.name, w.py, w.what, w.warn || '', w.ex || '', (w.blk || []).map((b) => b[1]).join(' '), catInfo[w.cat].name].join(' '));
+  }
+
+  function blocksHtml(w) {
+    if (!w.blk) return `<div class="noblk">${esc(w.blkNote || 'Blokkban nincs ilyen.')}</div>`;
+    return `<div class="bstack">${w.blk.map(([c, t, ind]) => `<div class="blk ${c}" style="margin-left:${(ind || 0) * 20}px">${esc(t)}</div>`).join('')}</div>`;
+  }
+  function missionLink(id) {
+    const i = M.findIndex((m) => m.id === id);
+    return i < 0 ? '' : `<a class="learned" href="kuldetesek.html#${id}">📜 Itt tanultuk: ${i + 1}. küldetés – ${esc(M[i].title)}</a>`;
+  }
+
+  function card(w) {
+    const showB = state.mode !== 'python', showP = state.mode !== 'blocks';
+    // blokk módban a csak-Python parancsokat nem mutatjuk
+    const sides = [];
+    if (showB) sides.push(`<div class="side"><span class="lbl">BLOKK</span>${blocksHtml(w)}</div>`);
+    if (showP) sides.push(`<div class="side"><span class="lbl">PYTHON</span><pre class="code">${esc(w.py)}</pre></div>`);
+    const warn = w.warn ? `<div class="warn"><b>Vigyázz!</b> ${esc(w.warn)}</div>` : '';
+    const ex = showP && w.ex ? `<div class="side"><span class="lbl">PÉLDA</span><pre class="code">${esc(w.ex)}</pre></div>` : '';
+    const tryBtn = showP && w.tryPy ? `<button class="btn btn-blue btn-sm" type="button" data-try="${w.id}">▶ Kipróbálom a pályán</button>` : '';
+    return `<article class="card word" id="${w.id}">
+      <h2>${esc(w.name)}</h2>
+      <div class="pair ${sides.length === 1 || Math.max(...w.py.split('\n').map((l) => l.length)) > 30 ? 'one' : ''}">${sides.join('')}</div>
+      <p class="what">${esc(w.what)}</p>${ex}${warn}
+      <div class="foot">${w.mission ? missionLink(w.mission) : '<span></span>'}${tryBtn}</div>
+    </article>`;
+  }
+
+  function render() {
+    document.querySelectorAll('.seg button').forEach((b) => b.classList.toggle('on', b.dataset.m === state.mode));
+    document.getElementById('cats').innerHTML = [['', 'Mind', '#55657F'], ...D.CATS].map(([id, name, col]) =>
+      `<button class="cat ${state.cat === id ? 'on' : ''}" type="button" data-c="${id}"><span class="dot" style="background:${col}"></span>${name}</button>`).join('');
+    const q = norm(state.q.trim());
+    let words = D.WORDS.filter((w) => (!state.cat || w.cat === state.cat) && (!q || haystack(w).includes(q)));
+    if (state.mode === 'blocks') words = words.filter((w) => w.blk);
+    const list = document.getElementById('list');
+    if (!words.length) { list.innerHTML = '<div class="card empty">Ilyet nem találtam. Próbáld másik szóval!</div>'; return; }
+    list.innerHTML = D.CATS.map(([id, name, col]) => {
+      const ws = words.filter((w) => w.cat === id);
+      if (!ws.length) return '';
+      return `<h2 class="group-title"><span class="dot" style="background:${col}"></span>${name}</h2>
+        <div class="words">${ws.map(card).join('')}</div>`;
+    }).join('');
+  }
+
+  document.querySelector('.seg').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.mode = b.dataset.m; K.store.set('dictMode', state.mode); render();
+  });
+  document.getElementById('cats').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.cat = b.dataset.c; render();
+  });
+  document.getElementById('q').addEventListener('input', (e) => { state.q = e.target.value; render(); });
+  document.getElementById('list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-try]'); if (!b) return;
+    const w = D.WORDS.find((x) => x.id === b.dataset.try);
+    K.store.set('tryCode', D.PRELUDE + w.tryPy + '\n');
+    location.href = 'palya/index.html#proba';
+  });
+
+  render();
+  // közvetlen hivatkozás egy szóra: szotar.html#turn
+  const h = location.hash.slice(1);
+  if (h && document.getElementById(h)) document.getElementById(h).scrollIntoView();
+  if (!K.store.get('group', '')) K.openSetup(() => location.reload());
+})();
+</script>
+</body>
+</html>

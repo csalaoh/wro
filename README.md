@@ -17,6 +17,7 @@ SPIKE Prime szimulátor Pybricks Pythonhoz és SPIKE App blokkokhoz.
 | --- | --- |
 | `index.html` | főoldal: küldetés-térkép, jelvények, kabala |
 | `kuldetesek.html` | a küldetések (órák) oldala |
+| `szotar.html`, `assets/dictionary.js` | a Kódszótár (új parancs: a dictionary.js-be) |
 | `assets/common.css`, `assets/common.js` | közös stílus, csapat, avatár, jelvények |
 | `assets/lessons.js` | a küldetések szövege és programjai (ezt szerkeszd, ha új óra jön) |
 | `palya/index.html` | a szimulátor oldala |

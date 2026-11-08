@@ -67,6 +67,7 @@
       ['home', 'Főoldal', base + 'index.html'],
       ['missions', 'Küldetések', base + 'kuldetesek.html'],
       ['track', 'Pálya', base + 'palya/index.html'],
+      ['dict', 'Szótár', base + 'szotar.html'],
     ];
     const el = document.getElementById('siteHeader');
     el.className = 'site-header';
@@ -76,7 +77,7 @@
         <span><span class="logo-name">Kódfejtő Műhely</span><br><span class="logo-sub">Diákszempont · robotika tehetséggondozás</span></span>
       </a>
       <nav class="site-nav" aria-label="Fő menü">${nav.map(([k, t, h]) => `<a href="${h}" class="${k === active ? 'on' : ''}">${t}</a>`).join('')}
-        <a class="soon" href="#" aria-disabled="true" title="Hamarosan">Szótár</a><a class="soon" href="#" aria-disabled="true" title="Hamarosan">Játékok</a></nav>
+        <a class="soon" href="#" aria-disabled="true" title="Hamarosan">Játékok</a></nav>
       <button class="me" type="button" id="meBtn" aria-label="Avatár és csapat beállítása">
         ${avatarSVG(p, 46)}
         <span><span class="me-name">${p.name} ügynök</span><br><span class="me-group">${g ? g.name : 'Válassz csapatot!'}</span></span>
