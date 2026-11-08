@@ -51,8 +51,10 @@
           <p>Elolvasod a programot, és megmondod, hová ér a robot, és merre néz a végén.</p>${bl('robot')}</span></a>
         <a class="card gcard" href="#fok"><span class="ico" style="background:#E8F0FF">📐</span><span><h2>Fok-tippelő</h2>
           <p>Mennyit kell fordulnia a robotnak? Tippelj! Blokkban kerékfokban, Pythonban robotfokban.</p>${bl('fok')}</span></a>
-        <div class="card gcard soon"><span class="ico" style="background:#EEF0FF">🧩</span><span><h2>Rakd sorba!</h2><p>Hamarosan</p></span></div>
-        <div class="card gcard soon"><span class="ico" style="background:#E8F8EF">🐞</span><span><h2>Hibavadász</h2><p>Hamarosan</p></span></div>
+        <a class="card gcard" href="#hiba"><span class="ico" style="background:#E8F8EF">🐞</span><span><h2>Hibavadász</h2>
+          <p>A robot nem azt csinálta, amit kellett. Melyik sorban bújik a hiba?</p>${bl('hiba')}</span></a>
+        <a class="card gcard" href="#sorba"><span class="ico" style="background:#EEF0FF">🧩</span><span><h2>Rakd sorba!</h2>
+          <p>Összekeveredtek a program sorai. Rakd őket jó sorrendbe!</p>${bl('sorba')}</span></a>
       </div>`;
   }
 
@@ -373,6 +375,257 @@
     newRound();
   }
 
+
+  // ============================================================ 3. Hibavadász
+  // Minden feladatban pontosan egy hibás sor van. A sorok: Python – szöveg; blokk – [kategória, szöveg, behúzás]
+  const EV = ['events', 'when program starts', 0];
+  const BUGS = {
+    python: [
+      { goal: 'Menj előre 20 cm-t!', lines: ['bal = Motor(Port.A)', 'jobb = Motor(Port.B)', 'robot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)', 'robot.straight(200)'], bug: 0,
+        saw: 'A robot helyben pörög, mint egy búgócsiga. 🌀', why: 'A bal motor fordítva ül a robotban. Meg kell neki mondani, hogy neki a fordított forgás az előre.', fix: 'bal = Motor(Port.A, Direction.COUNTERCLOCKWISE)' },
+      { goal: 'Menj előre 20 cm-t, aztán csipogj!', lines: ['robot.straight(20)', 'hub.speaker.beep()'], bug: 0,
+        saw: 'A robot alig mozdult: csak 2 centit ment.', why: 'Pythonban milliméterben adjuk meg a távolságot: 20 cm = 200 mm.', fix: 'robot.straight(200)' },
+      { goal: 'Csipogj, várj 1 másodpercet, aztán csipogj újra!', lines: ['hub.speaker.beep()', 'wait(1)', 'hub.speaker.beep()'], bug: 1,
+        saw: 'A két csipogás szinte egybeolvadt.', why: 'A wait() ezredmásodpercben számol: 1 másodperc = 1000.', fix: 'wait(1000)' },
+      { goal: 'Menj 20 cm-t, fordulj BALRA, aztán menj még 10 cm-t!', lines: ['robot.straight(200)', 'robot.turn(90)', 'robot.straight(100)'], bug: 1,
+        saw: 'A robot jobbra fordult.', why: 'Pythonban a pozitív szám jobbra fordít. Balra negatív számmal: -90.', fix: 'robot.turn(-90)' },
+      { goal: 'Rajzolj négyzetet!', lines: ['for i in range(3):', '    robot.straight(200)', '    robot.turn(90)'], bug: 0,
+        saw: 'A négyzetnek csak 3 oldala lett.', why: 'A négyzetnek 4 oldala van, ezért a ciklusnak 4-szer kell ismételnie.', fix: 'for i in range(4):' },
+      { goal: 'Rajzolj négyzetet!', lines: ['for i in range(4):', '    robot.straight(200)', 'robot.turn(90)'], bug: 2,
+        saw: 'A robot 80 cm-t ment egyenesen, és csak a legvégén fordult egyet.', why: 'A fordulás nincs beljebb húzva, ezért nem tartozik a ciklushoz: csak egyszer fut le, a végén.', fix: '    robot.turn(90)' },
+      { goal: 'Rajzolj négyzetet a negyzet szóval!', lines: ['def negyzet():', '    for i in range(4):', '        robot.straight(150)', '        robot.turn(90)', '', 'negyzet'], bug: 5,
+        saw: 'A robot meg sem mozdult.', why: 'Kimondáskor kell a zárójel. Zárójel nélkül a robot csak gondol a szóra, de nem csinálja meg.', fix: 'negyzet()' },
+      { goal: 'Rajzolj négyzetet a negyzet szóval!', lines: ['negyzet()', '', 'def negyzet():', '    for i in range(4):', '        robot.straight(150)', '        robot.turn(90)'], bug: 0,
+        saw: "Hibaüzenet: NameError: name 'negyzet' is not defined", why: 'A robot fentről lefelé olvas. A szót előbb meg kell tanítani (def), és csak utána lehet kimondani.', fix: 'a negyzet() sort a def rész alá kell tenni' },
+      { goal: 'Ha a színszenzor pirosat lát, csipogj!', lines: ['if szem.color() = Color.RED:', '    hub.speaker.beep(800, 200)'], bug: 0,
+        saw: 'Hibaüzenet: SyntaxError – a robot nem érti a programot.', why: 'Összehasonlításhoz két egyenlőségjel kell: ==. Az egy egyenlőségjel névadás.', fix: 'if szem.color() == Color.RED:' },
+      { goal: 'Menj előre 20 cm-t!', lines: ['bal = Motor(Port.A, Direction.COUNTERCLOCKWISE)', 'jobb = Motor(Port.C)', 'robot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)', 'robot.straight(200)'], bug: 1,
+        saw: 'Hibaüzenet: ENODEV – ezen a kapun nincs motor.', why: 'Az iskolai robotnál a jobb motor a B kapuban van. A C kapuban a színszenzor ül.', fix: 'jobb = Motor(Port.B)' },
+      { goal: 'Menj előre 20 cm-t!', lines: ['robot = DriveBase(bal, jobb, wheel_diameter=5.6, axle_track=112)', 'robot.straight(200)'], bug: 0,
+        saw: 'A robot nagyon messzire ment, és nekiment a falnak.', why: 'A kerék átmérője is milliméterben kell: 56. Ha 5.6-ot írsz, a robot azt hiszi, pici a kereke, ezért tízszer annyit forgatja.', fix: 'robot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)' },
+      { goal: 'Menj előre 20 cm-t, aztán tolass vissza a rajtra!', lines: ['robot.straight(200)', 'robot.straight(200)'], bug: 1,
+        saw: 'A robot 40 cm-t ment előre.', why: 'Hátrafelé mínusz számmal megy a robot.', fix: 'robot.straight(-200)' },
+    ],
+    blocks: [
+      { goal: 'Menj 20 cm-t, fordulj derékszögben jobbra, aztán menj még 20 cm-t!', lines: [EV, ['movement', 'move ↑ for 20 cm'], ['movement', 'move right: 100 for 90 degrees'], ['movement', 'move ↑ for 20 cm']], bug: 2,
+        saw: 'A robot csak félig fordult el.', why: 'A blokk a KERÉK fordulását adja meg. A robot 90 fokos fordulásához 180 kerékfok kell.', fix: 'move right: 100 for 180 degrees' },
+      { goal: 'Menj ELŐRE 20 cm-t!', lines: [EV, ['movement', 'set movement motors to A+B'], ['movement', 'move ↓ for 20 cm']], bug: 2,
+        saw: 'A robot hátrafelé ment.', why: 'A lefelé mutató nyíl (↓) hátramenetet jelent, előre a felfelé mutató (↑) kell.', fix: 'move ↑ for 20 cm' },
+      { goal: 'Rajzolj négyzetet!', lines: [EV, ['control', 'repeat 3'], ['movement', 'move ↑ for 20 cm', 1], ['movement', 'move right: 100 for 180 degrees', 1]], bug: 1,
+        saw: 'A négyzetnek csak 3 oldala lett.', why: 'A négyzetnek 4 oldala van, ezért 4-szer kell ismételni.', fix: 'repeat 4' },
+      { goal: 'Csipogj, várj 1 másodpercet, aztán csipogj újra!', lines: [EV, ['sound', 'play beep 72 for 0.2 seconds'], ['control', 'wait 1000 seconds'], ['sound', 'play beep 72 for 0.2 seconds']], bug: 2,
+        saw: 'A második csipogás nem jött… a robot még mindig vár.', why: 'Blokkban a várakozás másodpercben van: 1 másodperc = 1. Az 1000 a Python-csapat számolása!', fix: 'wait 1 seconds' },
+      { goal: 'Menj 20 cm-t, fordulj BALRA, aztán menj még 10 cm-t!', lines: [EV, ['movement', 'move ↑ for 20 cm'], ['movement', 'move right: 100 for 180 degrees'], ['movement', 'move ↑ for 10 cm']], bug: 2,
+        saw: 'A robot jobbra fordult.', why: 'A fordulás irányát a blokkban kell kiválasztani: right = jobbra, left = balra.', fix: 'move left: 100 for 180 degrees' },
+      { goal: 'Rajzolj négyzetet!', lines: [EV, ['control', 'repeat 4'], ['movement', 'move ↑ for 20 cm', 1], ['movement', 'move right: 100 for 180 degrees', 0]], bug: 3,
+        saw: 'A robot 80 cm-t ment egyenesen, és csak a legvégén fordult egyet.', why: 'A fordulás blokk nincs a repeat belsejében, ezért csak egyszer fut le, a végén.', fix: 'a fordulás blokkot a repeat belsejébe kell húzni' },
+      { goal: 'Menj előre 20 cm-t!', lines: [EV, ['movement', 'set 1 motor rotation to 1.75 cm'], ['movement', 'move ↑ for 20 cm']], bug: 1,
+        saw: 'A robot nagyon messzire ment, és nekiment a falnak.', why: 'Egy kerékfordulattal 17,5 cm-t gurul a robot. Ha 1,75-öt írsz, azt hiszi, alig halad, ezért tízszer annyit forgatja a kereket.', fix: 'set 1 motor rotation to 17.5 cm' },
+      { goal: 'Menj előre 20 cm-t!', lines: [EV, ['movement', 'set movement speed to 50 %'], ['movement', 'move ↑ for 20 seconds']], bug: 2,
+        saw: 'A robot 20 másodpercig ment, és nekiment a falnak.', why: 'A move blokkban a mértékegységet is ki kell választani. Most másodperc (seconds) van beállítva, centi (cm) kellene.', fix: 'move ↑ for 20 cm' },
+      { goal: 'Menj 20 cm-t, fordulj meg (hátraarc), és gyere vissza a rajtra!', lines: [EV, ['movement', 'move ↑ for 20 cm'], ['movement', 'move right: 100 for 180 degrees'], ['movement', 'move ↑ for 20 cm']], bug: 2,
+        saw: 'A robot csak derékszögben fordult, és oldalra ment el.', why: 'A hátraarc 180 fokos robotfordulás, ehhez 360 kerékfok kell.', fix: 'move right: 100 for 360 degrees' },
+      { goal: 'Menj előre 20 cm-t!', lines: [EV, ['movement', 'set movement motors to A+C'], ['movement', 'move ↑ for 20 cm']], bug: 1,
+        saw: 'Hibaüzenet: a C kapun nincs motor.', why: 'Az iskolai robotnál a kerekek motorjai az A és a B kapuban vannak. A C kapuban a színszenzor ül.', fix: 'set movement motors to A+B' },
+    ],
+  };
+  function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function bugGame() {
+    const G = { round: 0, points: 0, list: [], tries: 0, done: false };
+    function start() { G.round = 0; G.points = 0; G.list = shuffle(BUGS[mode]).slice(0, ROUNDS); newRound(); }
+    function newRound() { G.tries = 0; G.done = false; draw(); }
+    function lineHTML(l, i, cur) {
+      if (mode === 'python') {
+        if (l === '') return '<div style="height:12px"></div>';
+        return `<button class="pyline" data-i="${i}">${esc(l)}</button>`;
+      }
+      const [cat, t, ind] = l;
+      return `<button class="blk ${cat} bline" data-i="${i}" style="margin-left:${(ind || 0) * 22}px">${esc(t)}</button>`;
+    }
+    function draw() {
+      const cur = G.list[G.round];
+      app.innerHTML = `<style>
+          .pyline { display:block; width:100%; text-align:left; background:none; border:2px solid transparent; border-radius:8px; color:#E6EDF7; font:600 16px 'JetBrains Mono',monospace; padding:4px 8px; cursor:pointer; white-space:pre; }
+          .pyline:hover { border-color:#5B7DB8; }
+          .pyline.bad, .bline.bad { outline:4px solid #FF5A5F; outline-offset:2px; }
+          .pyline.good, .bline.good { outline:4px solid #2BB673; outline-offset:2px; }
+          .bline { border:0; cursor:pointer; font:inherit; font-weight:800; }
+          .bline:hover { filter:brightness(1.1); }
+          .codebox { background:#14203A; border-radius:14px; padding:10px; }
+          .saw { background:#FFF1D6; border-left:6px solid var(--yellow-d); border-radius:0 14px 14px 0; padding:12px 16px; font-size:18px; }
+          .fixbox { background:#E8F8EF; border-radius:14px; padding:12px 16px; }
+        </style>
+        <div class="topline"><h1>🐞 Hibavadász</h1>
+          <div class="stats"><span class="stat">${G.round + 1}. kör / ${ROUNDS}</span><span class="stat" id="pts">${G.points} pont</span>${modeSwitch()}</div></div>
+        <div class="game">
+          <div class="card panel">
+            <p class="task"><b>A feladat:</b> ${esc(cur.goal)}</p>
+            <div class="saw"><b>Mi történt?</b> ${esc(cur.saw)}</div>
+            <p class="task">Kattints arra a ${mode === 'python' ? 'sorra' : 'blokkra'}, amelyikben a hiba van!</p>
+            <div class="msg" id="msg" role="status"></div>
+            <div id="fix"></div>
+            <div style="display:flex;gap:12px"><button class="btn btn-blue" id="next" hidden>${G.round + 1 >= ROUNDS ? 'Eredmény' : 'Következő →'}</button></div>
+            <a href="#" style="font-weight:800">← Vissza a játékokhoz</a>
+          </div>
+          <div class="card">${mode === 'python' ? `<p class="muted" style="margin:0 0 8px">A szokásos import sorok most nem látszanak.</p><div class="codebox">${cur.lines.map((l, i) => lineHTML(l, i)).join('')}</div>`
+            : `<div class="bstack">${cur.lines.map((l, i) => lineHTML(l, i)).join('')}</div>`}</div>
+        </div>`;
+      bindMode(start);
+      app.querySelectorAll('[data-i]').forEach((b) => b.onclick = () => guess(+b.dataset.i, b));
+      app.querySelector('#next').onclick = () => { G.round++; if (G.round >= ROUNDS) end(); else newRound(); };
+    }
+    function guess(i, el) {
+      if (G.done) return;
+      const cur = G.list[G.round], msg = app.querySelector('#msg');
+      if (i === 0 && mode === 'blocks') { msg.className = 'msg err'; msg.textContent = 'A „when program starts” mindig jó, azzal nincs baj. Keresd tovább!'; return; }
+      G.tries++;
+      if (i !== cur.bug) {
+        el.classList.add('bad');
+        if (G.tries < 2) { msg.className = 'msg err'; msg.textContent = 'Ez a sor rendben van. Még egy próbád van!'; return; }
+      }
+      G.done = true;
+      const pts = i === cur.bug ? (G.tries === 1 ? 2 : 1) : 0;
+      G.points += pts;
+      app.querySelector('#pts').textContent = G.points + ' pont';
+      app.querySelector(`[data-i="${cur.bug}"]`).classList.add('good');
+      msg.className = 'msg ' + (pts ? 'ok' : 'err');
+      msg.textContent = pts === 2 ? 'Megvan a hiba! +2 pont' : pts === 1 ? 'Másodikra megvan! +1 pont' : 'Most nem találtad el. A zöld keretes a hibás.';
+      const fixIsCode = !/^a /.test(cur.fix);
+      app.querySelector('#fix').innerHTML = `<div class="fixbox"><b>Miért?</b> ${esc(cur.why)}<br><b>Javítás:</b> ${fixIsCode ? `<code style="font-size:16px">${esc(cur.fix.trim())}</code>` : esc(cur.fix) + '.'}</div>`;
+      app.querySelector('#next').hidden = false;
+    }
+    function end() {
+      const max = ROUNDS * 2;
+      saveBest('hiba', G.points, max);
+      app.innerHTML = `<div class="card endbox"><h1>🐞 Hibavadász</h1><div class="big">${stars(G.points, max)}</div>
+        <p style="font-size:22px;margin:0"><b>${G.points}</b> pont a ${max}-ból</p>
+        <p class="muted" style="margin:0">${G.points >= max * 0.9 ? 'Igazi hibavadász vagy! A pályán is így keresd a hibát: mit kellett volna csinálnia, és mit csinált?' : 'Tipp: először gondold végig, mit csinált a robot, aztán keresd azt a sort, amelyik ezt okozhatta!'}</p>
+        <div style="display:flex;gap:12px"><button class="btn btn-green" id="again">Újra játszom</button><a class="btn btn-plain" href="#">Másik játék</a></div></div>`;
+      app.querySelector('#again').onclick = start;
+    }
+    start();
+  }
+
+  // ============================================================ 4. Rakd sorba!
+  // A sorok a helyes sorrendben vannak megadva; a játék megkeveri őket.
+  const ORDER = {
+    python: [
+      { goal: 'Menj előre 20 cm-t, fordulj jobbra, aztán menj még 10 cm-t!', lines: ['robot.straight(200)', 'robot.turn(90)', 'robot.straight(100)'] },
+      { goal: 'Számolj vissza 3-tól 1-ig (minden szám után várj 1 másodpercet), a végén csipogj!', lines: ['hub.display.text("3")', 'wait(1000)', 'hub.display.text("2")', 'wait(1000)', 'hub.display.text("1")', 'hub.speaker.beep()'] },
+      { goal: 'Rajzolj négyzetet (minden oldalnál előbb menj, aztán fordulj), a végén csipogj!', lines: ['for i in range(4):', '    robot.straight(200)', '    robot.turn(90)', 'hub.speaker.beep()'] },
+      { goal: 'Taníts meg a robotnak egy „csipog” szót (csipogjon, aztán várjon), és mondd ki kétszer!', lines: ['def csipog():', '    hub.speaker.beep(800, 100)', '    wait(200)', 'csipog()', 'csipog()'] },
+      { goal: 'Kapcsold be a giroszkópot, várd meg, amíg kész, aztán fordulj 90 fokot!', lines: ['robot.use_gyro(True)', 'while not hub.imu.ready():', '    wait(10)', 'robot.turn(90)'] },
+      { goal: 'Ha a színszenzor pirosat lát, csipogj magasat, különben mélyet!', lines: ['if szem.color() == Color.RED:', '    hub.speaker.beep(800, 200)', 'else:', '    hub.speaker.beep(300, 200)'] },
+      { goal: 'Házi WRO: menj a kosárhoz, vedd fel (zöld fény, várj), vidd el, és tedd le (kék fény, várj)!', lines: ['robot.straight(258)', 'hub.light.on(Color.GREEN)', 'wait(1000)', 'robot.straight(370)', 'hub.light.on(Color.BLUE)', 'wait(1000)'] },
+      { goal: 'Menj előre 20 cm-t, fordulj meg, és gyere vissza a rajtra!', lines: ['robot.straight(200)', 'robot.turn(180)', 'robot.straight(200)'] },
+    ],
+    blocks: [
+      { goal: 'Menj előre 20 cm-t, fordulj jobbra, aztán menj még 10 cm-t!', lines: [['movement', 'move ↑ for 20 cm'], ['movement', 'move right: 100 for 180 degrees'], ['movement', 'move ↑ for 10 cm']] },
+      { goal: 'Számolj vissza 3-tól 1-ig (minden szám után várj 1 másodpercet), a végén csipogj!', lines: [['light', 'write 3'], ['control', 'wait 1 seconds'], ['light', 'write 2'], ['control', 'wait 1 seconds'], ['light', 'write 1'], ['sound', 'play beep 72 for 0.2 seconds']] },
+      { goal: 'Rajzolj négyzetet (minden oldalnál előbb menj, aztán fordulj), a végén csipogj!', lines: [['control', 'repeat 4'], ['movement', 'move ↑ for 20 cm', 1], ['movement', 'move right: 100 for 180 degrees', 1], ['sound', 'play beep 72 for 0.2 seconds']] },
+      { goal: 'Előbb állítsd be a motorokat és a sebességet, aztán menj előre 20 cm-t!', lines: [['movement', 'set movement motors to A+B'], ['movement', 'set movement speed to 50 %'], ['movement', 'move ↑ for 20 cm']] },
+      { goal: 'Villogj örökké: piros fény, várj fél másodpercet, kék fény, várj fél másodpercet!', lines: [['control', 'forever'], ['light', 'set Center Button light to red', 1], ['control', 'wait 0.5 seconds', 1], ['light', 'set Center Button light to blue', 1], ['control', 'wait 0.5 seconds', 1]] },
+      { goal: 'Ha a színszenzor pirosat lát, csipogj magasat, különben mélyet!', lines: [['control', 'if C is color red ? then'], ['sound', 'play beep 80 for 0.2 seconds', 1], ['control', 'else'], ['sound', 'play beep 60 for 0.2 seconds', 1]] },
+      { goal: 'Házi WRO: menj a kosárhoz, vedd fel (zöld fény, várj), vidd el, és tedd le (kék fény, várj)!', lines: [['movement', 'move ↑ for 25.8 cm'], ['light', 'set Center Button light to green'], ['control', 'wait 1 seconds'], ['movement', 'move ↑ for 37 cm'], ['light', 'set Center Button light to blue'], ['control', 'wait 1 seconds']] },
+      { goal: 'Menj előre 20 cm-t, fordulj meg (hátraarc), és gyere vissza a rajtra!', lines: [['movement', 'move ↑ for 20 cm'], ['movement', 'move right: 100 for 360 degrees'], ['movement', 'move ↑ for 20 cm']] },
+    ],
+  };
+
+  function orderGame() {
+    const G = { round: 0, points: 0, list: [], placed: [], pool: [], tries: 0, done: false };
+    const key = (l) => mode === 'python' ? l : l.join('|');
+    function start() { G.round = 0; G.points = 0; G.list = shuffle(ORDER[mode]).slice(0, ROUNDS); newRound(); }
+    function newRound() {
+      const cur = G.list[G.round];
+      do { G.pool = shuffle(cur.lines.map((l, i) => ({ l, i }))); } while (G.pool.every((x, k) => key(x.l) === key(cur.lines[k])));
+      G.placed = []; G.tries = 0; G.done = false; G.wrongAt = -1;
+      draw();
+    }
+    function item(x, where, k) {
+      const bad = where === 'prog' && k === G.wrongAt ? ' bad' : '', good = where === 'prog' && G.done ? ' good' : '';
+      if (mode === 'python') return `<button class="pyline${bad}${good}" data-w="${where}" data-k="${k}">${esc(x.l)}</button>`;
+      const [cat, t, ind] = x.l;
+      return `<button class="blk ${cat} bline${bad}" data-w="${where}" data-k="${k}" style="margin-left:${(where === 'prog' ? (ind || 0) * 22 : 0)}px">${esc(t)}</button>`;
+    }
+    function draw() {
+      const cur = G.list[G.round], all = G.pool.length === 0;
+      app.innerHTML = `<style>
+          .pyline { display:block; width:100%; text-align:left; background:none; border:2px solid transparent; border-radius:8px; color:#E6EDF7; font:600 16px 'JetBrains Mono',monospace; padding:5px 8px; cursor:pointer; white-space:pre; }
+          .pyline:hover { border-color:#5B7DB8; }
+          .pyline.bad, .bline.bad { outline:4px solid #FF5A5F; outline-offset:2px; }
+          .bline { border:0; cursor:pointer; font:inherit; font-weight:800; }
+          .codebox { background:#14203A; border-radius:14px; padding:10px; min-height:60px; }
+          .zone { display:flex; flex-direction:column; gap:3px; min-height:60px; }
+          .zone .empty { color:var(--muted); font-weight:700; padding:12px; border:3px dashed var(--line); border-radius:12px; }
+          .codebox .empty { color:#8FA3C4; border-color:#33476B; }
+        </style>
+        <div class="topline"><h1>🧩 Rakd sorba!</h1>
+          <div class="stats"><span class="stat">${G.round + 1}. kör / ${ROUNDS}</span><span class="stat" id="pts">${G.points} pont</span>${modeSwitch()}</div></div>
+        <div class="game">
+          <div class="card panel">
+            <p class="task"><b>A feladat:</b> ${esc(cur.goal)}</p>
+            <p class="muted" style="margin:0">Kattints a ${mode === 'python' ? 'sorokra' : 'blokkokra'} abban a sorrendben, ahogy a programban jönnek! Ha mellényúltál, a programban lévőre kattintva visszaveheted.${mode === 'python' ? ' A behúzás már jó, csak a sorrend a kérdés.' : ''}</p>
+            <div><div class="opt-title" style="font-weight:800;margin-bottom:6px">Összekevert ${mode === 'python' ? 'sorok' : 'blokkok'}:</div>
+              ${mode === 'python' ? `<div class="codebox zone">${G.pool.map((x, k) => item(x, 'pool', k)).join('') || '<div class="empty">Elfogytak – nézd meg a programot!</div>'}</div>`
+                : `<div class="zone">${G.pool.map((x, k) => item(x, 'pool', k)).join('') || '<div class="empty">Elfogytak – nézd meg a programot!</div>'}</div>`}</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <button class="btn btn-green" id="check" ${all && !G.done ? '' : 'disabled'}>Ellenőrzöm!</button>
+              <button class="btn btn-plain" id="reset" ${G.done ? 'hidden' : ''}>Újrakezdem</button>
+              <button class="btn btn-blue" id="next" ${G.done ? '' : 'hidden'}>${G.round + 1 >= ROUNDS ? 'Eredmény' : 'Következő →'}</button></div>
+            <div class="msg" id="msg" role="status">${G.msg || ''}</div>
+            <a href="#" style="font-weight:800">← Vissza a játékokhoz</a>
+          </div>
+          <div class="card"><div style="font-weight:800;margin-bottom:8px">A programod:</div>
+            ${mode === 'python' ? `<div class="codebox zone">${G.placed.map((x, k) => item(x, 'prog', k)).join('') || '<div class="empty">Ide kerülnek a sorok…</div>'}</div>`
+              : `<div class="zone"><div class="blk events">when program starts</div>${G.placed.map((x, k) => item(x, 'prog', k)).join('')}</div>`}
+          </div>
+        </div>`;
+      G.msg = '';
+      bindMode(start);
+      app.querySelectorAll('[data-w]').forEach((b) => b.onclick = () => {
+        if (G.done) return;
+        const k = +b.dataset.k;
+        if (b.dataset.w === 'pool') G.placed.push(G.pool.splice(k, 1)[0]);
+        else G.pool.push(G.placed.splice(k, 1)[0]);
+        G.wrongAt = -1; draw();
+      });
+      app.querySelector('#check').onclick = check;
+      app.querySelector('#reset').onclick = () => { G.pool = shuffle(G.pool.concat(G.placed)); G.placed = []; G.wrongAt = -1; draw(); };
+      app.querySelector('#next').onclick = () => { G.round++; if (G.round >= ROUNDS) end(); else newRound(); };
+    }
+    function check() {
+      const cur = G.list[G.round];
+      const wrong = G.placed.findIndex((x, k) => key(x.l) !== key(cur.lines[k]));
+      G.tries++;
+      if (wrong < 0) {
+        const pts = G.tries === 1 ? 3 : G.tries === 2 ? 2 : 1;
+        G.points += pts; G.done = true;
+        G.msg = `<span class="ok" style="color:var(--green-d)">${G.tries === 1 ? 'Elsőre tökéletes! +3 pont' : 'Megvan! +' + pts + ' pont'}</span>`;
+        return draw();
+      }
+      if (G.tries >= 3) {
+        G.placed = cur.lines.map((l, i) => ({ l, i })); G.pool = []; G.done = true;
+        G.msg = '<span style="color:var(--red-d)">Itt a helyes sorrend. Olvasd végig, és nézd meg, mi miért jön egymás után!</span>';
+        return draw();
+      }
+      // a hibás helytől kezdve visszakerül minden a kupacba
+      G.wrongAt = wrong;
+      G.msg = `<span style="color:var(--red-d)">A ${wrong + 1}. ${mode === 'python' ? 'sor' : 'blokk'} nem oda való. Javítsd ki! (Még ${3 - G.tries} próbád van.)</span>`;
+      draw();
+    }
+    function end() {
+      const max = ROUNDS * 3;
+      saveBest('sorba', G.points, max);
+      app.innerHTML = `<div class="card endbox"><h1>🧩 Rakd sorba!</h1><div class="big">${stars(G.points, max)}</div>
+        <p style="font-size:22px;margin:0"><b>${G.points}</b> pont a ${max}-ból</p>
+        <p class="muted" style="margin:0">${G.points >= max * 0.9 ? 'Pontosan tudod, mi után mi jön!' : 'Tipp: a robot fentről lefelé, egyesével hajtja végre a parancsokat. Mondd végig hangosan, mit csinál!'}</p>
+        <div style="display:flex;gap:12px"><button class="btn btn-green" id="again">Újra játszom</button><a class="btn btn-plain" href="#">Másik játék</a></div></div>`;
+      app.querySelector('#again').onclick = start;
+    }
+    start();
+  }
+
   function saveBest(key, pts, max) {
     const k = 'game.' + key + '.best', prev = K.store.get(k + 'Pts', -1);
     if (pts > prev) { K.store.set(k + 'Pts', pts); K.store.set(k, pts + ' / ' + max + ' pont'); }
@@ -380,7 +633,7 @@
 
   function route() {
     const h = location.hash.slice(1);
-    if (h === 'robot') robotGame(); else if (h === 'fok') fokGame(); else menu();
+    if (h === 'robot') robotGame(); else if (h === 'fok') fokGame(); else if (h === 'hiba') bugGame(); else if (h === 'sorba') orderGame(); else menu();
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);
