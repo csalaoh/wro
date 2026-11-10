@@ -93,6 +93,13 @@
   dialog#robotDlg::backdrop { background: rgba(29,43,68,.45); }
   .startinfo { font-size: 14.5px; line-height: 1.45; background: #FFF4E5; border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
   .startinfo b { color: #B45309; }
+  .startinfo .sd-tip { font-size: 13px; color: #8A6A3A; }
+  .sd-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); align-items: center; gap: 2px 8px; margin-top: 8px; font-weight: 800; }
+  .sd-row > span:first-child { grid-column: 1 / -1; }
+  .sd-row input { width: 64px; font: inherit; font-weight: 800; text-align: right; border: 2px solid #F3C98B; border-radius: 8px; padding: 3px 6px; background: #fff; color: var(--ink); }
+  .sd-row input:focus { outline: none; border-color: #F08C00; }
+  .sd-row span:last-child { font-size: 13.5px; color: #6B4E1E; }
+  .sd-msg { color: #C9393E; font-weight: 800; margin-top: 6px; font-size: 13.5px; }
   .robotgrid { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; align-items: start; }
   .robotfig { width: 100%; height: auto; background: #F4F8FF; border-radius: 16px; }
   .robotfields { display: flex; flex-direction: column; gap: 10px; }
@@ -213,7 +220,7 @@
           <button class="btn btn-plain btn-small" type="button" data-rot="5">↻ 5°</button>
           <button class="btn btn-plain btn-small" type="button" data-rot="90">↻ 90°</button>
         </div>
-        <p class="hint">Álló robotot az egérrel húzhatsz a pályán (5 mm-es lépésekben igazodik). A rajthelyzetet a böngésző megjegyzi.</p>
+        <p class="hint">Álló robotot az egérrel húzhatsz a pályán (5 mm-es lépésekben igazodik), vagy lent beírhatod a pontos értékeket. A rajthelyzetet a böngésző megjegyzi.</p>
         <div class="startinfo" id="startInfo"></div>
       </div>
       <div class="card panel">

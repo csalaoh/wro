@@ -637,15 +637,78 @@
     });
     ctx.restore();
   }
+  // A rajthelyzet kiírása – a számok átírhatók (billentyűzetről is be lehet állítani a rajtot).
+  const LOOK = ['felfelé', 'jobbra', 'lefelé', 'balra'];
+  function buildStartForm() {
+    const el = $('startInfo');
+    el.innerHTML = `<b>Így tedd le a valódi robotot</b> <span class="sd-tip">(a számokat át is írhatod)</span>
+      <label class="sd-row"><span id="sdL1">A hátulja</span><input id="sdA" type="text" inputmode="decimal"><span id="sdT1">cm</span></label>
+      <label class="sd-row"><span id="sdL2">A bal oldala</span><input id="sdB" type="text" inputmode="decimal"><span id="sdT2">cm</span></label>
+      <label class="sd-row"><span>Irány</span><input id="sdH" type="text" inputmode="numeric"><span id="sdT3">fok</span></label>
+      <div class="sd-msg" id="sdMsg"></div>`;
+    ['sdA', 'sdB', 'sdH'].forEach((id) => {
+      const inp = $(id);
+      inp.addEventListener('change', applyStartForm);
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyStartForm(); inp.select(); } });
+      inp.addEventListener('focus', () => inp.select());
+    });
+  }
+  const num = (v) => parseFloat(String(v).replace(',', '.').replace(/[^\d.\-]/g, ''));
+  function applyStartForm() {
+    if (state.play) return;
+    const st = state.starts[state.mat], R = ROBOT(), M = matInfo(), msg = $('sdMsg');
+    let h = num($('sdH').value);
+    if (!isFinite(h)) { msg.textContent = 'Az irányhoz egy számot írj (0 = felfelé, 90 = jobbra, 180 = lefelé, 270 = balra).'; return; }
+    h = ((Math.round(h) % 360) + 360) % 360;
+    const a = num($('sdA').value) * 10, b = num($('sdB').value) * 10;   // cm → mm
+    if (!isFinite(a) || !isFinite(b)) { msg.textContent = 'Írj be egy számot centiben (pl. 6 vagy 6,5).'; return; }
+    const W = R.bodyWidth, B = R.bodyRear, prevAxis = startGeometry().axis;
+    const n = { heading: h, x: st.x, y: st.y };
+    const axis = h % 90 === 0 ? h / 90 : -1;
+    if (axis >= 0 && prevAxis >= 0 && h !== st.heading && h !== Math.round(st.heading)) {
+      // csak az irány változott: a távolságokat az új iránynál újraszámoljuk, a robot helyben fordul
+      n.x = st.x; n.y = st.y;
+    } else if (axis === 0) { n.y = a + B; n.x = b + W / 2; }
+    else if (axis === 1) { n.x = a + B; n.y = M.height - b - W / 2; }
+    else if (axis === 2) { n.y = M.height - a - B; n.x = M.width - b - W / 2; }
+    else if (axis === 3) { n.x = M.width - a - B; n.y = b + W / 2; }
+    else {
+      // ferde rajt: a bal hátsó sarok koordinátái
+      const hr = h * Math.PI / 180, f = [Math.sin(hr), Math.cos(hr)], r = [Math.cos(hr), -Math.sin(hr)];
+      if (h !== Math.round(st.heading)) { n.x = st.x; n.y = st.y; }
+      else { n.x = a + r[0] * W / 2 + f[0] * B; n.y = b + r[1] * W / 2 + f[1] * B; }
+    }
+    // a robot teste legyen a pályán belül
+    const probe = Object.assign({}, n);
+    const hr = probe.heading * Math.PI / 180, f = [Math.sin(hr), Math.cos(hr)], r = [Math.cos(hr), -Math.sin(hr)];
+    const pts = [[-W / 2, -B], [W / 2, -B], [W / 2, R.bodyFront], [-W / 2, R.bodyFront]].map(([u, v]) => [probe.x + r[0] * u + f[0] * v, probe.y + r[1] * u + f[1] * v]);
+    if (pts.some(([x, y]) => x < -0.5 || y < -0.5 || x > M.width + 0.5 || y > M.height + 0.5)) {
+      msg.textContent = 'Így a robot lelógna a pályáról. Adj meg kisebb vagy nagyobb távolságot!';
+      return;
+    }
+    msg.textContent = '';
+    st.x = Math.round(n.x * 10) / 10; st.y = Math.round(n.y * 10) / 10; st.heading = n.heading;
+    state.pose = null; state.result = null;
+    store.set('starts', state.starts);
+    render();
+  }
   function updateStartInfo() {
     const el = $('startInfo'); if (!el) return;
-    const g = startGeometry(), cm = (v) => '<b>' + fmt(v / 10, 1) + ' cm</b>';
-    const look = ['felfelé', 'jobbra', 'lefelé', 'balra'];
+    if (!$('sdA')) buildStartForm();
+    const g = startGeometry(), act = document.activeElement;
+    const put = (id, v) => { if (act !== $(id)) $(id).value = v; };
+    const c1 = (v) => fmt(v / 10, 1);
     if (g.axis >= 0) {
-      el.innerHTML = `<b>Így tedd le a valódi robotot:</b> a hátulja ${cm(g.rear[1])}-re legyen a pálya ${g.rear[0]} szélétől, a bal oldala ${cm(g.left[1])}-re a ${g.left[0]} szélétől. Az orra ${look[g.axis]} néz.<br>Tipp: ragassz a valódi pályára is egy L alakú rajtvonalat ugyanide.`;
+      $('sdL1').textContent = 'A hátulja'; $('sdT1').textContent = `cm-re a pálya ${g.rear[0]} szélétől`;
+      $('sdL2').textContent = 'A bal oldala'; $('sdT2').textContent = `cm-re a ${g.left[0]} szélétől`;
+      put('sdA', c1(g.rear[1])); put('sdB', c1(g.left[1]));
     } else {
-      el.innerHTML = `<b>Ferde rajt (${g.q}°):</b> a robot bal hátsó sarka x = ${cm(g.corner[0])}, y = ${cm(g.corner[1])} (a pálya bal alsó sarkától). Ferde rajtot nehéz pontosan kimérni, ha lehet, állítsd egyenesre a ↺ 90° gombokkal!`;
+      $('sdL1').textContent = 'Bal hátsó sarok x'; $('sdT1').textContent = 'cm (a bal széltől)';
+      $('sdL2').textContent = 'Bal hátsó sarok y'; $('sdT2').textContent = 'cm (az alsó széltől)';
+      put('sdA', c1(g.corner[0])); put('sdB', c1(g.corner[1]));
     }
+    put('sdH', String(Math.round(g.st.heading)));
+    $('sdT3').textContent = g.axis >= 0 ? `fok (az orra ${LOOK[g.axis]} néz)` : 'fok (ferde: nehéz pontosan kimérni)';
   }
   function updateRobotSummary() {
     const d = dims(), el = $('robotSummary'); if (!el) return;
