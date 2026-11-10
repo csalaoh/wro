@@ -48,6 +48,21 @@
     set(k, v) { try { localStorage.setItem('kodfejto.' + k, JSON.stringify(v)); } catch (e) { /* nincs tárolás */ } },
   };
 
+  // ------------------------------------------------------------ a robot méretei
+  // Amit a tanár/diák a „Robot méretei” ablakban megad (mm). Ebből számoljuk a
+  // szimulátor robotját: a fizika, a rajz, az ütközés és a bíró is ezt használja.
+  const DIM_DEFAULT = { wheel: 56, axle: 112, length: 160, width: 128, rear: 60, pointer: 20 };
+  function dims() { return Object.assign({}, DIM_DEFAULT, store.get('robotDims', {})); }
+  function ROBOT() {
+    const d = dims(), front = d.length - d.rear;
+    return Object.assign({}, Sim.ROBOT_DEFAULT, {
+      wheelDiameter: d.wheel, axleTrack: d.axle, bodyFront: front, bodyRear: d.rear, bodyWidth: d.width,
+      pointer: front + d.pointer,
+      colorSensor: { forward: Math.max(0, front - 20), side: 0 },
+      distanceSensor: { forward: Math.max(0, front - 5), side: 0 },
+    });
+  }
+
   // Felhős mód: belépés nélkül a pálya nem használható (kivéve a tanárt).
   const Cloud = window.KodfejtoCloud;
   const cloudOn = !!(Cloud && Cloud.enabled);
@@ -320,7 +335,7 @@
   }
 
   function drawRobot(pose, alpha) {
-    const R = Sim.ROBOT_DEFAULT, s = scale();
+    const R = ROBOT(), s = scale();
     const [px, py] = toPx(pose.x, pose.y);
     ctx.save();
     ctx.globalAlpha = alpha == null ? 1 : alpha;
@@ -382,7 +397,7 @@
   // A robot eleje (a mutató vége) a mostani helyzetben
   function robotTip() {
     const p = state.pose || state.starts[state.mat];
-    const P = Sim.ROBOT_DEFAULT.pointer, h = p.heading * Math.PI / 180;
+    const P = ROBOT().pointer, h = p.heading * Math.PI / 180;
     return [p.x + Math.sin(h) * P, p.y + Math.cos(h) * P];
   }
   // Ha a robot elejétől mérünk, de a robot még nem a cél felé néz, figyelmeztetünk:
@@ -471,7 +486,7 @@
     if ($('toolSel').value !== 'aim') return;
     const d = aimData();
     if (!d) return;
-    const s = scale(), P = Sim.ROBOT_DEFAULT.pointer * s;
+    const s = scale(), P = ROBOT().pointer * s;
     const [tx, ty] = toPx(state.aim[0], state.aim[1]);
     const [cx, cy] = toPx(d.c[0], d.c[1]);
     const [ax, ay] = toPx(d.tipAfter[0], d.tipAfter[1]);
@@ -503,7 +518,7 @@
     ctx.restore();
     // 3. így állna a robot a végén: az eleje a célon
     const h = d.b * Math.PI / 180;
-    drawRobot({ x: state.aim[0] - Math.sin(h) * Sim.ROBOT_DEFAULT.pointer, y: state.aim[1] - Math.cos(h) * Sim.ROBOT_DEFAULT.pointer, heading: d.b }, 0.35);
+    drawRobot({ x: state.aim[0] - Math.sin(h) * ROBOT().pointer, y: state.aim[1] - Math.cos(h) * ROBOT().pointer, heading: d.b }, 0.35);
   }
 
   // Rajzlap: a cél-dobogó halvány képe a rajthelyzethez igazítva (a robot tengelyközepe a bal alsó sarok)
@@ -547,16 +562,99 @@
     const pose = state.pose || state.starts[state.mat];
     drawWro(pose);
     drawRobot(pose, 1);
+    if ($('optStart').checked) drawStart();
     drawTape();
     drawProtractor();
     drawAim();
     updateTele(pose, state.play ? state.play.t : null);
+    updateStartInfo();
   }
 
   function fmt(v, d) { return v.toFixed(d).replace('.', ','); }
+
+  // ------------------------------------------------------------ rajtvonal
+  // A rajthelyzet a pályára rajzolva: a robot körvonala, a hátulja mögötti rajtvonal
+  // és a bal oldala melletti vonal, a pálya szélétől mért távolságokkal.
+  const EDGE = ['alsó', 'bal', 'felső', 'jobb'];
+  function startGeometry() {
+    const st = state.starts[state.mat], R = ROBOT(), M = matInfo();
+    const q = ((Math.round(st.heading) % 360) + 360) % 360;
+    const axis = q % 90 === 0 ? q / 90 : -1;
+    const c = rearLeft(st);
+    const W = R.bodyWidth, B = R.bodyRear;
+    let rear = null, left = null;
+    if (axis === 0) { rear = [EDGE[0], st.y - B]; left = [EDGE[1], st.x - W / 2]; }
+    if (axis === 1) { rear = [EDGE[1], st.x - B]; left = [EDGE[2], M.height - (st.y + W / 2)]; }
+    if (axis === 2) { rear = [EDGE[2], M.height - (st.y + B)]; left = [EDGE[3], M.width - (st.x + W / 2)]; }
+    if (axis === 3) { rear = [EDGE[3], M.width - (st.x + B)]; left = [EDGE[0], st.y - W / 2]; }
+    return { st, R, axis, corner: c, rear, left, q };
+  }
+  function drawStart() {
+    const g = startGeometry(), { st, R } = g, s = scale();
+    const [px, py] = toPx(st.x, st.y);
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(st.heading * Math.PI / 180);
+    const W = R.bodyWidth * s, F = R.bodyFront * s, B = R.bodyRear * s;
+    ctx.strokeStyle = '#F08C00'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    ctx.strokeRect(-W / 2, -F, W, F + B);
+    ctx.setLineDash([]); ctx.lineWidth = 5; ctx.lineCap = 'round';
+    // rajtvonal a robot hátuljánál, kicsit túllógva
+    ctx.beginPath(); ctx.moveTo(-W / 2 - 25 * s, B); ctx.lineTo(W / 2 + 25 * s, B); ctx.stroke();
+    // oldalvonal a bal oldalán (L alak)
+    ctx.beginPath(); ctx.moveTo(-W / 2, B + 25 * s); ctx.lineTo(-W / 2, B - 70 * s); ctx.stroke();
+    ctx.restore();
+    // méretvonalak a pálya széléig (csak egyenes állásnál)
+    if (g.axis < 0) return;
+    const M = matInfo(), c = g.corner;
+    ctx.save();
+    ctx.strokeStyle = '#F08C00'; ctx.fillStyle = '#B45309'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+    ctx.font = '800 ' + Math.max(11, Math.round(13 * s * 2.2)) + 'px Nunito, sans-serif';
+    const line = (x1, y1, x2, y2, label, lx, ly) => {
+      const [a, b] = toPx(x1, y1), [c2, d] = toPx(x2, y2);
+      ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c2, d); ctx.stroke();
+      let [tx, ty] = toPx(lx, ly);
+      ctx.save(); ctx.setLineDash([]); ctx.fillStyle = 'rgba(255,255,255,.9)';
+      const w = ctx.measureText(label).width + 8;
+      // a felirat mindig férjen el a pályán
+      tx = Math.min(Math.max(tx, w / 2 + 2), canvas.width - w / 2 - 2);
+      ty = Math.min(Math.max(ty, 12), canvas.height - 12);
+      ctx.fillRect(tx - w / 2, ty - 10, w, 20); ctx.fillStyle = '#B45309'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, tx, ty); ctx.restore();
+    };
+    const cm = (v) => fmt(v / 10, 1) + ' cm';
+    // a hátsó vonal és a bal oldal távolsága a megfelelő pályaszéltől, a bal hátsó saroktól indítva
+    const ends = {
+      alsó: [c[0], c[1], c[0], 0], bal: [c[0], c[1], 0, c[1]],
+      felső: [c[0], c[1], c[0], M.height], jobb: [c[0], c[1], M.width, c[1]],
+    };
+    [g.rear, g.left].forEach(([edge, dist], k) => {
+      const e = ends[edge];
+      // a feliratot kicsit elhúzzuk a vonaltól, hogy a két felirat ne takarja egymást
+      const vert = e[0] === e[2], off = 28;
+      const lx = (e[0] + e[2]) / 2 + (vert ? off : 0), ly = (e[1] + e[3]) / 2 + (vert ? 0 : off);
+      line(e[0], e[1], e[2], e[3], cm(dist), lx, ly);
+    });
+    ctx.restore();
+  }
+  function updateStartInfo() {
+    const el = $('startInfo'); if (!el) return;
+    const g = startGeometry(), cm = (v) => '<b>' + fmt(v / 10, 1) + ' cm</b>';
+    const look = ['felfelé', 'jobbra', 'lefelé', 'balra'];
+    if (g.axis >= 0) {
+      el.innerHTML = `<b>Így tedd le a valódi robotot:</b> a hátulja ${cm(g.rear[1])}-re legyen a pálya ${g.rear[0]} szélétől, a bal oldala ${cm(g.left[1])}-re a ${g.left[0]} szélétől. Az orra ${look[g.axis]} néz.<br>Tipp: ragassz a valódi pályára is egy L alakú rajtvonalat ugyanide.`;
+    } else {
+      el.innerHTML = `<b>Ferde rajt (${g.q}°):</b> a robot bal hátsó sarka x = ${cm(g.corner[0])}, y = ${cm(g.corner[1])} (a pálya bal alsó sarkától). Ferde rajtot nehéz pontosan kimérni, ha lehet, állítsd egyenesre a ↺ 90° gombokkal!`;
+    }
+  }
+  function updateRobotSummary() {
+    const d = dims(), el = $('robotSummary'); if (!el) return;
+    const changed = JSON.stringify(d) !== JSON.stringify(DIM_DEFAULT);
+    el.innerHTML = `Kerék ${fmt(d.wheel, d.wheel % 1 ? 1 : 0)} mm · tengelytáv ${fmt(d.axle, d.axle % 1 ? 1 : 0)} mm · ${d.length} × ${d.width} mm${changed ? ' <b style="color:#B45309">(saját)</b>' : ' (iskolai alap)'}`;
+  }
   function updateTele(p, t) {
     // a műszerfal a robot ELEJÉNEK (a mutató végének) helyét mutatja
-    const P = Sim.ROBOT_DEFAULT.pointer, hr = p.heading * Math.PI / 180;
+    const P = ROBOT().pointer, hr = p.heading * Math.PI / 180;
     $('tx').textContent = fmt((p.x + Math.sin(hr) * P) / 10, 1) + ' cm';
     $('ty').textContent = fmt((p.y + Math.cos(hr) * P) / 10, 1) + ' cm';
     const h = ((p.heading % 360) + 360) % 360;
@@ -623,19 +721,30 @@
     if (!state.dragging) return;
     state.dragging = false;
     const st = state.starts[state.mat];
-    st.x = Math.round(st.x); st.y = Math.round(st.y);
+    snapStart(st);
     store.set('starts', state.starts);
     render();
   });
+  // A robot bal hátsó sarkát 5 mm-es rácsra igazítjuk, hogy a valódi pályán könnyű legyen kimérni.
+  function rearLeft(st) {
+    const R = ROBOT(), h = st.heading * Math.PI / 180;
+    const f = [Math.sin(h), Math.cos(h)], r = [Math.cos(h), -Math.sin(h)];
+    return [st.x - r[0] * R.bodyWidth / 2 - f[0] * R.bodyRear, st.y - r[1] * R.bodyWidth / 2 - f[1] * R.bodyRear];
+  }
+  function snapStart(st) {
+    const c = rearLeft(st), sx = Math.round(c[0] / 5) * 5 - c[0], sy = Math.round(c[1] / 5) * 5 - c[1];
+    st.x = Math.round((st.x + sx) * 10) / 10; st.y = Math.round((st.y + sy) * 10) / 10;
+  }
   document.querySelectorAll('[data-rot]').forEach((b) => b.addEventListener('click', () => {
     if (state.play) return;
     const st = state.starts[state.mat];
     st.heading = (((st.heading + Number(b.dataset.rot)) % 360) + 360) % 360;
+    snapStart(st);
     state.pose = null; state.result = null;
     store.set('starts', state.starts);
     render();
   }));
-  ['optTrail', 'optGhost', 'optTarget'].forEach((id) => $(id).addEventListener('change', render));
+  ['optTrail', 'optGhost', 'optTarget', 'optStart'].forEach((id) => $(id).addEventListener('change', render));
   function updateToolHint() {
     const tool = $('toolSel').value, h = $('toolHint');
     $('robotAngleBtn').hidden = tool !== 'angle';
@@ -663,7 +772,7 @@
   function aimData() {
     if (!state.aim) return null;
     const p = state.pose || state.starts[state.mat];
-    const P = Sim.ROBOT_DEFAULT.pointer;
+    const P = ROBOT().pointer;
     const c = [p.x, p.y];
     const b = bearing(c, state.aim);
     const turn = norm180(b - p.heading);
@@ -767,7 +876,7 @@
       if (w.hits[p.id]) { ctx.fillStyle = '#fff'; ctx.font = '800 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', x + ww / 2, y + hh / 2); }
     });
     // kártyák (a robotnál lévők a mutató mellett, kicsiben)
-    const tip = (() => { const h = pose.heading * Math.PI / 180, P = Sim.ROBOT_DEFAULT.pointer; return [pose.x + Math.sin(h) * P, pose.y + Math.cos(h) * P]; })();
+    const tip = (() => { const h = pose.heading * Math.PI / 180, P = ROBOT().pointer; return [pose.x + Math.sin(h) * P, pose.y + Math.cos(h) * P]; })();
     let carriedN = 0;
     w.cards.forEach((k) => {
       let cx = k.x, cy = k.y, size = J.CARD;
@@ -834,7 +943,7 @@
     }
     let res;
     try {
-      res = await RT.runProgram(state.pyodide, state.shim, code, { mat: state.mat, start }, sampler);
+      res = await RT.runProgram(state.pyodide, state.shim, code, { mat: state.mat, start, robot: ROBOT() }, sampler);
     } catch (e) {
       log('A szimulátor hibába futott: ' + e, 'c-err');
       $('runBtn').disabled = false;
@@ -842,10 +951,11 @@
     }
     res.mat = state.mat;
     state.result = res;
+    dimsHint(code);
     if (state.mode === 'python' && res.lint) res.lint.forEach(([, msg]) => log('💡 ' + msg, 'c-hint'));
     if (state.wro) {
       resetWroCards();
-      state.wro.judge = J.evaluate(res, state.wro.order, Sim.ROBOT_DEFAULT);
+      state.wro.judge = J.evaluate(res, state.wro.order, ROBOT());
       if (!state.wro.judge.startOk) log('⚖ A robot nem teljesen a rajtterületen állt (fehér keret). A versenyen ez szabálytalan rajt!', 'c-err');
       $('wroScore').textContent = ''; $('wroSheetBtn').hidden = true;
     }
@@ -937,7 +1047,7 @@
       const t = state.lastStopT || 0;
       const cut = Object.assign({}, state.result, { frames: state.result.frames.filter((f) => f.t <= t), events: state.result.events.filter((e) => e.t <= t) });
       if (cut.frames.length) {
-        state.wro.judge = J.evaluate(cut, state.wro.order, Sim.ROBOT_DEFAULT);
+        state.wro.judge = J.evaluate(cut, state.wro.order, ROBOT());
         state.result = Object.assign({}, state.result, { duration: t });
         const sc = state.wro.judge.score;
         log('🏁 Pontszám a megállításkor: ' + sc.total + ' / ' + sc.max, 'c-ok');
@@ -959,6 +1069,7 @@
   if (!Sim.MATS[state.mat]) state.mat = 'palya1';
   $('matSel').value = store.get('wro', false) ? 'wro1' : state.mat;
   if (store.get('wro', false)) { state.mat = 'palya1'; setWro(true); }
+  Object.values(state.starts).forEach(snapStart);
   updateMatUi();
   fitCanvas();
   resetHub();
@@ -1032,4 +1143,51 @@
       $('loading').textContent = 'A Python nem töltődött be. Frissítsd az oldalt! (' + (e && e.message || e) + ')';
     }
   })();
+
+  // ------------------------------------------------------------ robot méretei ablak
+  (function robotDialog() {
+    const dlg = $('robotDlg'); if (!dlg) return;
+    const F = { wheel: 'rdWheel', axle: 'rdAxle', length: 'rdLength', width: 'rdWidth', rear: 'rdRear', pointer: 'rdPointer' };
+    const fill = (d) => Object.entries(F).forEach(([k, id]) => { $(id).value = d[k]; });
+    $('robotBtn').addEventListener('click', () => { fill(dims()); $('rdMsg').textContent = ''; dlg.showModal(); });
+    $('robotClose').addEventListener('click', () => dlg.close());
+    $('robotReset').addEventListener('click', () => { fill(DIM_DEFAULT); $('rdMsg').textContent = 'Visszaállítottam az iskolai alapértékeket. Nyomd meg a Mentést!'; });
+    $('robotSave').addEventListener('click', () => {
+      const d = {};
+      for (const [k, id] of Object.entries(F)) {
+        const v = parseFloat(String($(id).value).replace(',', '.'));
+        if (!isFinite(v)) { $('rdMsg').textContent = 'Minden mezőbe írj egy számot!'; return; }
+        d[k] = v;
+      }
+      const err = d.wheel < 20 || d.wheel > 150 ? 'A kerék átmérője 20 és 150 mm között legyen.'
+        : d.axle < 40 || d.axle > 300 ? 'A tengelytáv 40 és 300 mm között legyen.'
+        : d.length < 60 || d.length > 400 ? 'A hossz 60 és 400 mm között legyen.'
+        : d.width < 60 || d.width > 400 ? 'A szélesség 60 és 400 mm között legyen.'
+        : d.rear < 0 || d.rear > d.length ? 'A kerekek közepe a roboton belül legyen (0 és a hossz között).'
+        : d.pointer < 0 || d.pointer > 200 ? 'A mutató 0 és 200 mm között nyúljon ki.'
+        : d.axle > d.width ? 'A tengelytáv nem lehet nagyobb, mint a robot szélessége.' : '';
+      if (err) { $('rdMsg').textContent = err; return; }
+      store.set('robotDims', d);
+      dlg.close();
+      state.pose = null; state.result = null; state.ghost = null;
+      snapStart(state.starts[state.mat]); store.set('starts', state.starts);
+      updateRobotSummary(); render();
+      log('⚙ Elmentettem a robot méreteit.' + (Math.max(d.length, d.width) > 250 ? ' Figyelem: a WRO-n a robot legfeljebb 25 × 25 × 25 cm lehet a rajtnál!' : ''), 'c-hint');
+    });
+    updateRobotSummary();
+  })();
+
+  // Ha a program más kerékméretet vagy tengelytávot ír, mint a beállított robot, szólunk.
+  function dimsHint(code) {
+    const d = dims(), out = [];
+    if (state.mode === 'python') {
+      const w = /wheel_diameter\s*=\s*([\d.]+)/.exec(code), a = /axle_track\s*=\s*([\d.]+)/.exec(code);
+      if (w && Math.abs(parseFloat(w[1]) - d.wheel) > 0.5) out.push(`a programodban wheel_diameter=${w[1]}, de a robot kereke ${fmt(d.wheel, 1)} mm`);
+      if (a && Math.abs(parseFloat(a[1]) - d.axle) > 0.5) out.push(`a programodban axle_track=${a[1]}, de a robot tengelytávja ${fmt(d.axle, 1)} mm`);
+    } else {
+      const r = /set_rotation\(([\d.]+),\s*"cm"\)/.exec(code), circ = Math.PI * d.wheel / 10;
+      if (r && Math.abs(parseFloat(r[1]) - circ) / circ > 0.02) out.push(`a programban 1 kerékfordulat = ${r[1]} cm, de ennél a keréknél ${fmt(circ, 1)} cm`);
+    }
+    if (out.length) log('💡 Eltérés: ' + out.join('; ') + '. A szimulátor a beállított robottal mozog, ezért a robot rosszul fog mérni, pont mint a valóságban. Ha a robotod tényleg ilyen, írd át a programot!', 'c-hint');
+  }
 })();
