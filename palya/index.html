@@ -134,6 +134,7 @@
       <option value="palya2">Pálya2 (rács)</option>
       <option value="wro1">Házi WRO: Ébred a farm</option>
       <option value="rajzlap">Rajzlap (üres, a robot rajzol)</option>
+      <option value="edzo">Edzőpálya: igazodás (WRO-méret)</option>
     </select>
     <button class="btn btn-go" id="runBtn" disabled>▶ Indulj!</button>
     <button class="btn btn-stop" id="stopBtn" disabled>■ Állj!</button>
@@ -226,6 +227,7 @@
       <div class="card panel">
         <h2>ROBOT</h2>
         <p class="hint" id="robotSummary" style="margin:0"></p>
+        <label style="font-weight:800;display:flex;gap:8px;align-items:center"><input type="checkbox" id="optReal"> Valóság mód (kis eltérések, mint a valódi robotnál)</label>
         <button class="btn btn-plain btn-small" type="button" id="robotBtn">⚙ Robot méretei</button>
       </div>
     </div>
@@ -260,6 +262,9 @@
       <label><span class="t">D · A robot szélessége<small>kerekekkel együtt</small></span><span class="v"><input type="number" id="rdWidth" step="1"> mm</span></label>
       <label><span class="t">E · A kerekek közepe<small>a robot hátuljától mérve</small></span><span class="v"><input type="number" id="rdRear" step="1"> mm</span></label>
       <label><span class="t">F · A mutató<small>ennyivel nyúlik ki a robot eleje elé</small></span><span class="v"><input type="number" id="rdPointer" step="1"> mm</span></label>
+      <label><span class="t">G · A színszenzor(ok) <small>ennyivel van(nak) a robot eleje mögött</small></span><span class="v"><input type="number" id="rdSensFwd" step="1"> mm</span></label>
+      <label><span class="t">Második színszenzor az F porton <small>a C a bal, az F a jobb oldalon</small></span><span class="v"><input type="checkbox" id="rdColor2" style="width:22px;height:22px"></span></label>
+      <label><span class="t">H · A két színszenzor távolsága <small>középtől középig</small></span><span class="v"><input type="number" id="rdSensGap" step="1"> mm</span></label>
       <p class="hint" id="rdMsg" style="margin:0;color:#C9393E;font-weight:700"></p>
     </div>
   </div>

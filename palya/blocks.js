@@ -293,6 +293,30 @@
       steer('right', 34.6), fwd(37),
       B('spike_center_light', { COLOR: 'BLUE' }), B('spike_beep', null, { NOTE: n(60), N: n(0.2) }), B('spike_wait', null, { N: n(1) }),
     ]) },
+    k8: { label: 'Tolass a falhoz! (8. küldetés)', ws: program([
+      B('spike_set_speed', null, { N: n(30) }),
+      B('spike_start_moving', { DIR: 'back' }), B('spike_wait', null, { N: n(1.5) }), B('spike_stop_moving'),
+      fwd(40),
+    ]) },
+    k9: { label: 'Menj a vonalig! (9. küldetés)', ws: program([
+      B('spike_set_speed', null, { N: n(30) }),
+      B('spike_start_moving', { DIR: 'fwd' }),
+      B('spike_wait_until', null, { COND: { block: B('logic_compare', { OP: 'LT' }, { A: { block: B('spike_reflection', { PORT: 'C' }) }, B: n(50) }) } }),
+      B('spike_stop_moving'),
+      fwd(10),
+    ]) },
+    k11: { label: 'Kövesd a vonalat! (11. küldetés)', ws: program([
+      B('spike_set_speed', null, { N: n(25) }),
+      B('spike_repeat', null, { N: n(400), DO: { block: chain([
+        B('spike_if_else', null, {
+          COND: { block: B('spike_color_is', { PORT: 'C', COLOR: 'BLACK' }) },
+          DO: { block: B('spike_start_steer', { SIDE: 'right' }, { S: n(30) }) },
+          ELSE: { block: B('spike_start_steer', { SIDE: 'left' }, { S: n(30) }) },
+        }),
+        B('spike_wait', null, { N: n(0.05) }),
+      ]) } }),
+      B('spike_stop_moving'),
+    ]) },
     dobogo: { label: '🔑 TANÁRI: dobogó – teljes megoldás', teacher: true, ws: program([
       call('negyzet'), call('jobbra_lep'), call('negyzet'), call('jobbra_lep'), call('negyzet'),
       fwd(15), steer('left', 180), fwd(22.5), steer('right', 180),

@@ -355,16 +355,16 @@ class ColorSensor:
         self.lights = _Light()
 
     def reflection(self):
-        return int(_sim.color_reflection())
+        return int(_sim.color_reflection(self._port))
 
     def ambient(self):
-        return int(_sim.color_reflection() * 0.3)
+        return int(_sim.color_reflection(self._port) * 0.3)
 
     def color(self, surface=True):
-        return getattr(Color, _sim.color_name())
+        return getattr(Color, _sim.color_name(self._port))
 
     def hsv(self, surface=True):
-        h, s, v = _sim.color_hsv()
+        h, s, v = _sim.color_hsv(self._port)
         return _Color("HSV", int(h), int(s), int(v))
 
     def detectable_colors(self, colors=None):
@@ -724,13 +724,13 @@ def _sb_wait_until(cond):
 def _sb_color_is(port, color):
     if _sim.device(port) != "color":
         raise OSError(19, "ENODEV: a " + port + " porton nincs színszenzor")
-    return _sim.color_name() == color
+    return _sim.color_name(port) == color
 
 
 def _sb_reflection(port):
     if _sim.device(port) != "color":
         raise OSError(19, "ENODEV: a " + port + " porton nincs színszenzor")
-    return int(_sim.color_reflection())
+    return int(_sim.color_reflection(port))
 
 
 def _sb_distance_cm(port):

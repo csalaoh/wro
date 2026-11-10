@@ -234,6 +234,152 @@
         challenge: '1. Hozd el a másik kosarat (K1) is a középső parcellára!<br>2. Számold meg, hányszor raktad le ugyanazt a három blokkot! Csinálj belőlük saját blokkot (felvesz és lerak), és cseréld le velük az ismétlődő blokkokat. Ugyanannyi pontot kell kapnod!',
       },
     },
+    {
+      id: 'k8',
+      title: 'Tolass a falhoz!',
+      story: 'A robotot sosem tesszük le tökéletesen egyenesen: pár fokot mindig tévedünk, és ez a pálya végére centikké nő. A versenypálya szélén viszont fal van, és ezt ki lehet használni! Ha a robot hátulja nekinyomódik a falnak, magától kiegyenesedik.',
+      learn: ['Miért a barátunk a pálya fala?', 'Hogyan igazítjuk a robotot a falhoz?', 'Időre vezérelt mozgás: drive + wait + stop'],
+      rules: [
+        { t: 'A fal kiegyenesít', d: 'Ha a robot ferdén tolat a falnak, előbb az egyik sarka ér hozzá. Annak az oldalnak a kereke megáll, a másik tovább tolja, és a robot szépen a falhoz simul.' },
+        { t: 'Lassan, és egy kicsit tovább', d: 'Lassan tolass, és egy kicsit tovább, mint amennyi a falig kell: a robotnak idő kell, hogy kiegyenesedjen. 1,5 másodperc általában elég.' },
+        { t: 'Miért nem straight()?', d: 'A <code>robot.straight()</code> pontos távolságot akar megtenni. A falnál ez nem sikerül, a robot elakad. Itt a <code>drive()</code> + <code>wait()</code> + <code>stop()</code> hármas kell: „menj, amíg le nem állítalak”.' },
+      ],
+      python: {
+        code: "from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# 1. Tolass a falhoz! A robot hátulja nekinyomódik a falnak,\n#    és közben kiegyenesedik.\nrobot.drive(-100, 0)     # lassan hátra\nwait(1500)               # 1,5 másodpercig tolja a falat\nrobot.stop()\n\n# 2. Most már pontosan egyenesen áll: indulhat előre\nrobot.straight(400)\n",
+        explain: [
+          ['robot.drive(-100, 0)', 'Lassan hátra indul (−100 mm/s), egyenesen (a 0 azt jelenti, hogy nem kanyarodik). Addig megy, amíg meg nem állítjuk.'],
+          ['wait(1500)', 'Közben 1,5 másodpercig várunk. Ennyi idő alatt a robot a falhoz ér, és kiegyenesedik.'],
+          ['robot.stop()', 'Megállunk. A robot most egyenesen, a falhoz simulva áll.'],
+          ['robot.straight(400)', 'Innen már pontosan egyenesen indulunk 40 cm-t. A cél a piros sáv: a mutató 2 cm-rel az A vonal előtt álljon meg.'],
+        ],
+        challenge: '1. Töröld ki a három tolató sort, és futtasd így! Hova ér a robot? Mennyivel ment mellé?<br>2. Kapcsold be a Robot panelen a <b>Valóság módot</b>, és futtasd többször! Mindig eléri a célt?<br>3. Forgasd el a rajtot még jobban (írd át az irányt 20°-ra)! Még mindig kiegyenesedik?',
+      },
+      blocks: {
+        code: [["events", "when program starts"], ["movement", "set movement motors to A+B"], ["movement", "set 1 motor rotation to 17.5 cm"], ["movement", "set movement speed to 30 %"], ["movement", "start moving ↓"], ["control", "wait 1.5 seconds"], ["movement", "stop moving"], ["movement", "move ↑ for 40 cm"]],
+        explain: [
+          ['set movement speed to 30 %', 'Lassabban megyünk, hogy a robot finoman érjen a falhoz.'],
+          ['start moving ↓', 'Hátrafelé indul, és addig megy, amíg meg nem állítjuk.'],
+          ['wait 1.5 seconds', '1,5 másodpercig toljuk a falat: közben a robot kiegyenesedik.'],
+          ['stop moving', 'Megállunk. A robot most egyenesen áll.'],
+          ['move ↑ for 40 cm', 'Innen már egyenesen megyünk 40 cm-t a piros sávig.'],
+        ],
+        challenge: '1. Vedd ki a három tolató blokkot, és futtasd így! Hova ér a robot?<br>2. Kapcsold be a Robot panelen a <b>Valóság módot</b>, és futtasd többször! Mindig eléri a célt?<br>3. Forgasd el a rajtot még jobban! Még mindig kiegyenesedik?',
+      },
+    },
+    {
+      id: 'k9',
+      title: 'Menj a vonalig!',
+      story: 'A falhoz igazodva az irány pontos lesz. De mennyit mentünk? A kerekek csúszhatnak, és minden centi hiba összeadódik. A pályán fekete vonalak vannak: ha a robot egy vonalnál áll meg, onnan pontosan tudja, hol van.',
+      learn: ['Hogyan lát a színszenzor fekete vonalat?', '„Menj, amíg…” – a while ciklus', 'A távolság újrakalibrálása vonallal'],
+      rules: [
+        { t: 'Fényesség 0 és 100 között', d: 'A <code>reflection()</code> megmondja, mennyi fény verődik vissza: fehér felett nagy (kb. 100), fekete felett kicsi (kb. 0). Félúton, 50-nél húzzuk meg a határt.' },
+        { t: 'Menj, amíg…', d: 'A <code>while</code> ciklus addig ismétel, amíg a feltétel igaz. Itt: amíg világosat lát, addig vár egy kicsit, és megy tovább.' },
+        { t: 'A valódi pályán mérd meg!', d: 'A valódi szenzor fehér felett kb. 80–100-at, fekete felett 5–15-öt mér, és ez pályánként más. Írasd ki mindkettőt, és a kettő közepét használd határnak.' },
+      ],
+      python: {
+        code: "from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\nszem = ColorSensor(Port.C)\n\n# 1. Indulj el, és közben figyeld a színszenzort!\nrobot.drive(150, 0)\nwhile szem.reflection() > 50:    # amíg világosat (fehéret) lát...\n    wait(5)                      # ...addig megy tovább\nrobot.stop()                     # fekete vonal: megállunk\n\n# 2. Innen már pontosan tudjuk, hol vagyunk\nrobot.straight(100)\n",
+        explain: [
+          ['szem = ColorSensor(Port.C)', 'Elnevezzük a C kapuban lévő színszenzort: szem.'],
+          ['robot.drive(150, 0)', 'Elindulunk előre, egyenesen, és megyünk, amíg meg nem állítjuk.'],
+          ['while szem.reflection() > 50:', 'Amíg a szenzor világosat lát (50-nél többet), addig…'],
+          ['    wait(5)', '…várunk 5 ezredmásodpercet, és újra megnézzük. A robot közben megy.'],
+          ['robot.stop()', 'Ha feketét lát, kilépünk a ciklusból, és megállunk: a szenzor a vonal szélén van.'],
+          ['robot.straight(100)', 'Innen pontosan tudjuk, hol vagyunk: még 10 cm, és a mutató a piros sávban áll.'],
+        ],
+        challenge: '1. Húzd a robotot közelebb vagy messzebb a vonaltól! Mindig sikerül a cél? Miért?<br>2. Írd át a sebességet 150-ről 400-ra! Mi történik a vonalnál?<br>3. A valódi pályán írasd ki fehér és fekete felett is: <code>print(szem.reflection())</code>. Mi legyen a határ?',
+      },
+      blocks: {
+        code: [["events", "when program starts"], ["movement", "set movement motors to A+B"], ["movement", "set 1 motor rotation to 17.5 cm"], ["movement", "set movement speed to 30 %"], ["movement", "start moving ↑"], ["control", "wait until ‹C reflection < 50›"], ["movement", "stop moving"], ["movement", "move ↑ for 10 cm"]],
+        explain: [
+          ['start moving ↑', 'Elindulunk előre, és megyünk, amíg meg nem állítjuk.'],
+          ['wait until C reflection < 50', 'Várunk, amíg a színszenzor sötétet lát (50-nél kevesebbet): ez a fekete vonal. Közben a robot megy.'],
+          ['stop moving', 'Megállunk a vonalnál. Innen pontosan tudjuk, hol vagyunk.'],
+          ['move ↑ for 10 cm', 'Még 10 cm, és a mutató a piros sávban áll.'],
+        ],
+        challenge: '1. Húzd a robotot közelebb vagy messzebb a vonaltól! Mindig sikerül a cél?<br>2. Állítsd a sebességet 30-ról 80-ra! Mi történik a vonalnál?<br>3. A valódi pályán nézd meg a SPIKE Appban, mennyit mér a szenzor fehér és fekete felett!',
+      },
+    },
+    {
+      id: 'k10',
+      title: 'Igazodj a vonalhoz!',
+      only: 'python',
+      story: 'Falhoz csak a pálya szélén tudunk igazodni. A pálya közepén a vonalak segítenek: két színszenzorral a robot merőlegesre tudja állítani magát egy vonalra, menet közben, bárhol a pályán.',
+      learn: ['Két szenzor, két kerék: mindegyik a saját oldalát figyeli', 'A motorok külön vezérlése: run() és stop()', 'Miért jobb kétszer igazodni?'],
+      rules: [
+        { t: 'Mindkét oldal a saját vonaláig', d: 'A bal kerék addig megy, amíg a bal szenzor feketét nem lát, a jobb kerék a jobb szenzorig. Amelyik előbb ér oda, az megvárja a másikat, és a robot ráfordul a vonalra.' },
+        { t: 'Lassan!', d: 'A kerekek lassan menjenek (100 fok/s), különben a robot túlfut a vonalon, mire megáll.' },
+        { t: 'Másodszorra pontosabb', d: 'Az első igazodás után a robot még pár fokot ferde, mert a szenzorok a kerekek előtt vannak. Kicsit vissza, és még egyszer: így már szinte tökéletes.' },
+      ],
+      python: {
+        code: "from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\nszem_b = ColorSensor(Port.C)     # bal oldali színszenzor\nszem_j = ColorSensor(Port.F)     # jobb oldali színszenzor\n\ndef igazodj():\n    # Mindkét kerék lassan a vonal felé megy. Amelyik oldal szenzora\n    # feketét lát, annak a kereke megáll, a másik tovább megy.\n    while True:\n        b_kesz = szem_b.reflection() < 50\n        j_kesz = szem_j.reflection() < 50\n        if b_kesz and j_kesz:\n            break\n        if b_kesz:\n            bal.stop()\n        else:\n            bal.run(100)\n        if j_kesz:\n            jobb.stop()\n        else:\n            jobb.run(100)\n        wait(5)\n    bal.stop()\n    jobb.stop()\n\nigazodj()              # 1. igazodás: már majdnem egyenes\nrobot.straight(-40)    # egy kicsit vissza a vonal elé\nigazodj()              # 2. igazodás: most már pontos\n\n# Most merőlegesen áll a vonalra: innen mérhetünk\nrobot.straight(150)\n",
+        explain: [
+          ['szem_b, szem_j', 'Két színszenzor: a bal a C, a jobb az F kapuban. (A Robot méretei ablakban be kell kapcsolni a második szenzort.)'],
+          ['def igazodj():', 'Saját parancs az igazodáshoz, mert kétszer is használjuk.'],
+          ['while True: … break', 'Örökké ismétel, amíg el nem érjük a célt: ha mindkét szenzor feketét lát, a break kilép a ciklusból.'],
+          ['b_kesz = szem_b.reflection() < 50', 'Igaz, ha a bal szenzor már a fekete vonalon van.'],
+          ['if b_kesz: bal.stop() else: bal.run(100)', 'Ha a bal oldal kész, a bal kerék áll. Ha nem, lassan forog előre. Ugyanígy a jobb oldal.'],
+          ['robot.straight(-40), igazodj()', 'Egy kicsit vissza, és még egyszer igazodunk: másodszorra sokkal pontosabb.'],
+          ['robot.straight(150)', 'Most merőlegesen állunk a vonalra: 15 cm, és a mutató a piros sávban áll.'],
+        ],
+        challenge: '1. Hívd meg az <code>igazodj()</code>-t csak egyszer! Hány fokot áll ferdén a végén? (A konzol kiírja.)<br>2. Hívd meg háromszor! Mennyivel lesz jobb?<br>3. Tedd a robotot nagyon ferdén (30°) a vonal elé! Működik még?',
+      },
+    },
+    {
+      id: 'k11',
+      title: 'Kövesd a vonalat!',
+      story: 'Sok WRO-pályán fekete vonal vezet a feladatokhoz. A robot a vonal szélét követi: ha feketét lát, kifelé kanyarodik, ha fehéret, befelé. Így cikázva halad a vonal mentén, a kanyarokban is.',
+      learn: ['Vonalkövetés egy szenzorral', 'Döntés minden pillanatban: ha… különben…', 'Sebesség és kanyarodás egyensúlya'],
+      rules: [
+        { t: 'A vonal szélét követjük', d: 'Nem a vonal közepét, hanem a szélét: ott találkozik a fekete a fehérrel. A szenzor hol az egyiket, hol a másikat látja.' },
+        { t: 'Cikázás', d: 'Minden pillanatban dönt: fekete → kifelé kanyarodik, fehér → befelé. Ettől cikázik, de a vonalon marad.' },
+        { t: 'Ne túl gyorsan!', d: 'Ha túl gyors, a kanyarban kirepül, mielőtt észrevenné, hogy elhagyta a vonalat.' },
+      ],
+      python: {
+        code: "from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\nszem = ColorSensor(Port.C)\n\n# Kövesd a vonal szélét 20 másodpercig!\nfor i in range(2000):\n    if szem.reflection() < 50:   # feketén vagyok: kifelé kanyarodom\n        robot.drive(120, 40)\n    else:                        # fehéren vagyok: befelé kanyarodom\n        robot.drive(120, -40)\n    wait(10)\nrobot.stop()\n",
+        explain: [
+          ['for i in range(2000):', '2000-szer ismétlünk, mindegyik 10 ms: összesen 20 másodpercig követjük a vonalat.'],
+          ['if szem.reflection() < 50:', 'Ha a szenzor feketét lát (a vonalon van)…'],
+          ['    robot.drive(120, 40)', '…előre megy, és közben jobbra, kifelé kanyarodik (40 fok/s).'],
+          ['else: robot.drive(120, -40)', 'Különben (fehéret lát) balra, befelé kanyarodik.'],
+          ['wait(10)', '10 ms várakozás, aztán újra dönt.'],
+        ],
+        challenge: '1. Növeld a sebességet 120-ról 200-ra! Bent marad a robot a kanyarban?<br>2. Mi történik, ha a 40-et 80-ra írod? És ha 15-re?<br>⭐ Junioroknak: simább követés! Ne csak két irány legyen: kanyarodj annyival, amennyire messze vagy a határtól: <code>robot.drive(120, (50 - szem.reflection()) * 1.5)</code>. Ez az arányos (P) szabályozó.',
+      },
+      blocks: {
+        code: [["events", "when program starts"], ["movement", "set movement motors to A+B"], ["movement", "set 1 motor rotation to 17.5 cm"], ["movement", "set movement speed to 25 %"], ["control", "repeat 400"], ["control", "if ‹C is color black?› then", 1], ["movement", "start moving right: 30", 2], ["control", "else", 1], ["movement", "start moving left: 30", 2], ["control", "wait 0.05 seconds", 1], ["movement", "stop moving"]],
+        explain: [
+          ['repeat 400', '400-szor ismétlünk, mindegyik 0,05 mp: 20 másodpercig követjük a vonalat.'],
+          ['if C is color black? then', 'Ha a szenzor feketét lát (a vonalon van)…'],
+          ['start moving right: 30', '…jobbra, kifelé kanyarodik.'],
+          ['else → start moving left: 30', 'Különben (fehéret lát) balra, befelé kanyarodik.'],
+          ['wait 0.05 seconds', 'Egy pici várakozás, aztán újra dönt.'],
+        ],
+        challenge: '1. Növeld a sebességet 25-ről 50-re! Bent marad a robot a kanyarban?<br>2. Mi történik, ha a 30-at 60-ra írod? És ha 10-re?',
+      },
+    },
+    {
+      id: 'k12',
+      title: 'Hosszú út újrakalibrálással',
+      only: 'python',
+      story: 'A versenyen a robot sokat megy, és minden mozdulatnál tévedhet egy kicsit. Ha csak megyünk és fordulunk, a hibák összeadódnak. A jó versenyrobot menet közben újra és újra igazodik: falhoz, vonalhoz. Így a cél akkor is meglesz, ha a robot nem tökéletes.',
+      learn: ['Útvonaltervezés igazodási pontokkal', 'Saját parancsok: tolass_a_falhoz(), menj_a_vonalig()', 'Tervezz a hibára: Valóság mód'],
+      rules: [
+        { t: 'Kapcsold be a Valóság módot!', d: 'A Robot panelen a Valóság mód minden futásnál kicsit elrontja a robotot (kerekek, tengelytáv, letevés), mint a valóságban. Ilyenkor derül ki, mennyire jó a terved.' },
+        { t: 'Igazodási pontok', d: 'Tervezd úgy az utat, hogy minden hosszabb szakasz előtt legyen egy fal vagy egy vonal, amihez igazodhatsz. A fal az irányt, a vonal a távolságot javítja.' },
+        { t: 'Egy futás nem futás', d: 'A versenyen a megbízhatóság a fontos. Futtasd 5-ször, és számold meg, hányszor sikerült!' },
+      ],
+      python: {
+        code: "from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\nszem = ColorSensor(Port.C)\n\ndef tolass_a_falhoz():\n    robot.drive(-100, 0)\n    wait(1500)\n    robot.stop()\n\ndef menj_a_vonalig():\n    robot.drive(150, 0)\n    while szem.reflection() > 50:\n        wait(5)\n    robot.stop()\n\n# 1. Igazodás a falhoz: innen egyenesen állunk\ntolass_a_falhoz()\n# 2. Az A vonalig: innen tudjuk, milyen messze vagyunk a faltól\nmenj_a_vonalig()\nrobot.straight(-150)          # vissza a vonal alá\n# 3. Jobbra fordulunk, és a B vonalig megyünk\nrobot.turn(90)\nmenj_a_vonalig()\n# 4. Balra fordulunk, és felmegyünk a célhoz\nrobot.turn(-90)\nrobot.straight(300)\n",
+        explain: [
+          ['def tolass_a_falhoz(), def menj_a_vonalig()', 'A 8. és a 9. küldetés tudása, saját parancsként. Így a terv olvasható marad.'],
+          ['tolass_a_falhoz()', '1. igazodás: a rajt után a fal kiegyenesíti a robotot.'],
+          ['menj_a_vonalig(), robot.straight(-150)', '2. igazodás: az A vonalnál pontosan tudjuk, milyen messze vagyunk a faltól. Aztán kicsit vissza, hogy a szenzor ne a vonalon álljon.'],
+          ['robot.turn(90), menj_a_vonalig()', '3. igazodás: jobbra fordulunk, és a B vonalig megyünk. Most már oldalirányban is tudjuk, hol vagyunk.'],
+          ['robot.turn(-90), robot.straight(300)', 'Balra fordulunk, és felmegyünk a piros célhoz.'],
+        ],
+        challenge: '1. Kapcsold be a Valóság módot, és futtasd 5-ször! Hányszor találta el a célt?<br>2. Írj egy „buta” változatot igazodás nélkül (csak straight és turn), ami ugyanoda visz! Valóság módban hányszor talál?<br>3. Tedd a rajtot máshova a rajtmezőn belül! Az igazodó változat így is célba ér? És a buta?',
+      },
+    },
   ];
 
   window.KodfejtoMissions = MISSIONS;

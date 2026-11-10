@@ -169,9 +169,9 @@
       },
 
       // szenzorok
-      color_hsv: () => { const [r, g, b] = sim.colorUnderSensor(); return rgbToHsv(r, g, b).map(Math.round); },
-      color_reflection: () => { const [r, g, b] = sim.colorUnderSensor(); return Math.round((0.299 * r + 0.587 * g + 0.114 * b) / 255 * 100); },
-      color_name: () => { const [r, g, b] = sim.colorUnderSensor(); const [h, s, v] = rgbToHsv(r, g, b); return classify(h, s, v); },
+      color_hsv: (port) => { const [r, g, b] = sim.colorUnderSensor(port); return rgbToHsv(r, g, b).map(Math.round); },
+      color_reflection: (port) => { const [r, g, b] = sim.colorUnderSensor(port); return Math.round((0.299 * r + 0.587 * g + 0.114 * b) / 255 * 100); },
+      color_name: (port) => { const [r, g, b] = sim.colorUnderSensor(port); const [h, s, v] = rgbToHsv(r, g, b); return classify(h, s, v); },
       distance: () => sim.distanceAhead(),
     };
     return api;

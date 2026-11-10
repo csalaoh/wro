@@ -37,6 +37,7 @@
     palya1: { name: 'Pálya1', width: 1120, height: 990 },
     palya2: { name: 'Pálya2', width: 990, height: 1120 },
     rajzlap: { name: 'Rajzlap', width: 1000, height: 800 },
+    edzo: { name: 'Edzőpálya (WRO-méret)', width: 2362, height: 1143 },
   };
 
   const DT = 5;              // szimulációs lépés (ms)
@@ -104,17 +105,50 @@
     }
 
     // --- segédek ---------------------------------------------------------
-    mmPerDeg() { return Math.PI * this.robot.wheelDiameter / 360; }
+    mmPerDeg(side) {
+      // „valóság módban” a két kerék kicsit eltérhet (gumi, kopás, gyártás)
+      const d = side === 'left' && this.robot.wheelDiameterL ? this.robot.wheelDiameterL
+        : side === 'right' && this.robot.wheelDiameterR ? this.robot.wheelDiameterR : this.robot.wheelDiameter;
+      return Math.PI * d / 360;
+    }
 
     wheelSpeeds() {
       // a két kerék talajhoz viszonyított sebessége (mm/s), előre pozitív
       let vl = 0, vr = 0;
       for (const p in this.motors) {
         const m = this.motors[p];
-        const v = m.rawSpeed * this.mmPerDeg();
+        const v = m.rawSpeed * this.mmPerDeg(m.side);
         if (m.side === 'left') vl += -v; else vr += v;
       }
       return [vl, vr];
+    }
+
+    // Ezek a sarkak lógnának ki a pályáról (a pálya szélén fal van).
+    outside(x, y, h) {
+      const out = [];
+      this.corners(x, y, h).forEach(([cx, cy], i) => {
+        const e = 1e-6;
+        if (cx < -e || cx > this.mat.width + e || cy < -e || cy > this.mat.height + e) out.push(i);
+      });
+      return out;
+    }
+    // Ha a robot csak kicsit nyomódott bele a falba, a fal visszatolja.
+    pushOut(x, y, h) {
+      let dx = 0, dy = 0;
+      this.corners(x, y, h).forEach(([cx, cy]) => {
+        if (cx < 0) dx = Math.max(dx, -cx);
+        if (cx > this.mat.width) dx = Math.min(dx, this.mat.width - cx);
+        if (cy < 0) dy = Math.max(dy, -cy);
+        if (cy > this.mat.height) dy = Math.min(dy, this.mat.height - cy);
+      });
+      return { x: x + dx, y: y + dy, h, shift: Math.hypot(dx, dy) };
+    }
+    // Egy lépés a két kerék adott sebességével (mm/s).
+    poseAfter(vl, vr, s) {
+      const v = (vl + vr) / 2;
+      const omega = (vl - vr) / (this.robot.axleTrackReal || this.robot.axleTrack) * 180 / Math.PI;
+      const hMid = this.heading + omega * s / 2;
+      return { x: this.x + Math.sin(rad(hMid)) * v * s, y: this.y + Math.cos(rad(hMid)) * v * s, h: this.heading + omega * s };
     }
 
     corners(x, y, h) {
@@ -152,16 +186,30 @@
       if (this.t + dt > MAX_TIME) throw new SimTimeout('SIM_TIMEOUT');
       for (const p in this.motors) this.motors[p].raw += this.motors[p].rawSpeed * dt / 1000;
       const [vl, vr] = this.wheelSpeeds();
-      const v = (vl + vr) / 2;
-      const omega = (vl - vr) / this.robot.axleTrack * 180 / Math.PI; // fok/s, jobbra pozitív
       const s = dt / 1000;
-      const hMid = this.heading + omega * s / 2;
-      const nx = this.x + Math.sin(rad(hMid)) * v * s;
-      const ny = this.y + Math.cos(rad(hMid)) * v * s;
-      const nh = this.heading + omega * s;
-      if (this.insideWalls(nx, ny, nh)) {
-        this.x = nx; this.y = ny; this.heading = nh;
-        if (this.stalled) { this.stalled = false; this.stallTime = 0; }
+      const P = this.poseAfter(vl, vr, s);
+      let moved = null;
+      const out = this.outside(P.x, P.y, P.h);
+      if (!out.length) moved = P;
+      else {
+        // A pálya szélén fal van. Ha a robot ferdén nyomódik neki, annak az oldalnak
+        // a kereke megakad (megcsúszik), a másik viszi tovább: a robot a falhoz
+        // fordul, és kiegyenesedik – mint a valódi pályán.
+        // sarkok: 0 = jobb elöl, 1 = bal elöl, 2 = bal hátul, 3 = jobb hátul
+        const left = out.some((i) => i === 1 || i === 2), right = out.some((i) => i === 0 || i === 3);
+        const tries = [];
+        if (right && !left) tries.push([vl, 0]);
+        if (left && !right) tries.push([0, vr]);
+        for (const [a, b] of tries) {
+          const Q = this.poseAfter(a, b, s);
+          const R = this.pushOut(Q.x, Q.y, Q.h);
+          if (R.shift < 3 && !this.outside(R.x, R.y, R.h).length) { moved = R; break; }
+        }
+      }
+      if (moved) {
+        const progressed = Math.hypot(moved.x - this.x, moved.y - this.y) > 1e-4 || Math.abs(moved.h - this.heading) > 1e-5;
+        this.x = moved.x; this.y = moved.y; this.heading = moved.h;
+        if (progressed && this.stalled) { this.stalled = false; this.stallTime = 0; }
       } else {
         // A fal megállítja a robotot. A kerék itt megcsúszik, a motor szöge nő tovább.
         if (!this.stalled) this.event('stall');
@@ -297,8 +345,8 @@
     }
 
     // A szenzor alatti pont színe a pályaképből (a felület adja a mintavevőt).
-    colorUnderSensor() {
-      const c = this.robot.colorSensor;
+    colorUnderSensor(port) {
+      const c = (this.robot.colorSensors && this.robot.colorSensors[port]) || this.robot.colorSensor;
       const p = this.pointOnRobot(c.forward, c.side);
       if (this.sampleColor) return this.sampleColor(p.x, p.y);
       return [255, 255, 255];

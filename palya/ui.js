@@ -25,6 +25,12 @@
   SAMPLES.dobogo = 'from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# TANÁRI MEGOLDÁS – a dobogó (oldal: 15 cm)\n\ndef negyzet():\n    for i in range(4):\n        robot.straight(150)\n        robot.turn(90)\n\n# A második szó, amire a gyerekeknek maguktól kell rájönniük:\n# "lépj át a szomszéd négyzet sarkába"\ndef jobbra_lep():\n    robot.turn(90)\n    robot.straight(150)\n    robot.turn(-90)\n\n# 1. sor: 3 négyzet\nnegyzet()\njobbra_lep()\nnegyzet()\njobbra_lep()\nnegyzet()\n\n# Átállás a 2. sor elejére: fel 15 cm, balra 22,5 cm\nrobot.straight(150)\nrobot.turn(-90)\nrobot.straight(225)\nrobot.turn(90)\n\n# 2. sor: 2 négyzet\nnegyzet()\njobbra_lep()\nnegyzet()\n\n# Átállás a 3. sorra: fel 15 cm, balra 7,5 cm\nrobot.straight(150)\nrobot.turn(-90)\nrobot.straight(75)\nrobot.turn(90)\n\n# 3. sor: 1 négyzet\nnegyzet()\n';
   SAMPLES.k7 = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction, Color\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# 1. Odamegyünk a jobb oldali kosárhoz (K2)\nrobot.turn(7.6)\nrobot.straight(258)\n\n# FELVESZEM! – jelzés a bírónak\nhub.light.on(Color.GREEN)\nhub.speaker.beep(800, 200)\nwait(1000)\n\n# 2. Elvisszük a bal felső parcellára, a madárijesztő mellett\nrobot.turn(17.3)\nrobot.straight(370)\n\n# LERAKOM! – jelzés a bírónak\nhub.light.on(Color.BLUE)\nhub.speaker.beep(400, 200)\nwait(1000)\n\n# 3. Most te jössz: hozd el a másik kosarat (K1) a középső parcellára!\n';
 
+  SAMPLES.k8 = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# 1. Tolass a falhoz! A robot hátulja nekinyomódik a falnak,\n#    és közben kiegyenesedik.\nrobot.drive(-100, 0)     # lassan hátra\nwait(1500)               # 1,5 másodpercig tolja a falat\nrobot.stop()\n\n# 2. Most már pontosan egyenesen áll: indulhat előre\nrobot.straight(400)\n';
+  SAMPLES.k9 = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\nszem = ColorSensor(Port.C)\n\n# 1. Indulj el, és közben figyeld a színszenzort!\nrobot.drive(150, 0)\nwhile szem.reflection() > 50:    # amíg világosat (fehéret) lát...\n    wait(5)                      # ...addig megy tovább\nrobot.stop()                     # fekete vonal: megállunk\n\n# 2. Innen már pontosan tudjuk, hol vagyunk\nrobot.straight(100)\n';
+  SAMPLES.k10 = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\nszem_b = ColorSensor(Port.C)     # bal oldali színszenzor\nszem_j = ColorSensor(Port.F)     # jobb oldali színszenzor\n\ndef igazodj():\n    # Mindkét kerék lassan a vonal felé megy. Amelyik oldal szenzora\n    # feketét lát, annak a kereke megáll, a másik tovább megy.\n    while True:\n        b_kesz = szem_b.reflection() < 50\n        j_kesz = szem_j.reflection() < 50\n        if b_kesz and j_kesz:\n            break\n        if b_kesz:\n            bal.stop()\n        else:\n            bal.run(100)\n        if j_kesz:\n            jobb.stop()\n        else:\n            jobb.run(100)\n        wait(5)\n    bal.stop()\n    jobb.stop()\n\nigazodj()              # 1. igazodás: már majdnem egyenes\nrobot.straight(-40)    # egy kicsit vissza a vonal elé\nigazodj()              # 2. igazodás: most már pontos\n\n# Most merőlegesen áll a vonalra: innen mérhetünk\nrobot.straight(150)\n';
+  SAMPLES.k11 = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\nszem = ColorSensor(Port.C)\n\n# Kövesd a vonal szélét 20 másodpercig!\nfor i in range(2000):\n    if szem.reflection() < 50:   # feketén vagyok: kifelé kanyarodom\n        robot.drive(120, 40)\n    else:                        # fehéren vagyok: befelé kanyarodom\n        robot.drive(120, -40)\n    wait(10)\nrobot.stop()\n';
+  SAMPLES.k12 = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor, ColorSensor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\nszem = ColorSensor(Port.C)\n\ndef tolass_a_falhoz():\n    robot.drive(-100, 0)\n    wait(1500)\n    robot.stop()\n\ndef menj_a_vonalig():\n    robot.drive(150, 0)\n    while szem.reflection() > 50:\n        wait(5)\n    robot.stop()\n\n# 1. Igazodás a falhoz: innen egyenesen állunk\ntolass_a_falhoz()\n# 2. Az A vonalig: innen tudjuk, milyen messze vagyunk a faltól\nmenj_a_vonalig()\nrobot.straight(-150)          # vissza a vonal alá\n# 3. Jobbra fordulunk, és a B vonalig megyünk\nrobot.turn(90)\nmenj_a_vonalig()\n# 4. Balra fordulunk, és felmegyünk a célhoz\nrobot.turn(-90)\nrobot.straight(300)\n';
+
   // A küldetések kiinduló programja (a Küldetések oldal „Kipróbálom a pályán” gombja: #k2-python)
   const MISSION_START = {
     k1: { python: 'beep', blocks: 'k1' },
@@ -34,12 +40,27 @@
     k5: { python: 'k5', blocks: 'k5', mat: 'rajzlap' },
     k6: { python: 'k6', blocks: 'k6', mat: 'rajzlap' },
     k7: { python: 'k7', blocks: 'k7', wro: true },
+    // 8–12.: igazodás falhoz és vonalhoz az edzőpályán (WRO-méret)
+    k8: { python: 'k8', blocks: 'k8', mat: 'edzo', start: { x: 400, y: 90, heading: 12 } },
+    k9: { python: 'k9', blocks: 'k9', mat: 'edzo', start: { x: 1100, y: 150, heading: 0 } },
+    k10: { python: 'k10', mat: 'edzo', start: { x: 600, y: 300, heading: 10 } },
+    k11: { python: 'k11', blocks: 'k11', mat: 'edzo', start: { x: 1820, y: 200, heading: 90 } },
+    k12: { python: 'k12', mat: 'edzo', start: { x: 150, y: 150, heading: 0 } },
+  };
+  // A küldetések célja az edzőpályán: hol álljon meg a mutató vége.
+  //  band: egy vonal (y = …) adott tűréssel, opcionálisan egyenes irány;  point: egy pont adott sugárral
+  const MISSION_TARGET = {
+    k8: { type: 'band', y: 580, tol: 10, heading: 0, htol: 1.5, label: 'a mutató 2 cm-rel az A vonal előtt, egyenesen' },
+    k9: { type: 'band', y: 730, tol: 10, label: 'a mutató 12 cm-rel az A vonal fölött' },
+    k10: { type: 'band', y: 780, tol: 10, heading: 0, htol: 2.5, label: 'a mutató 17 cm-rel az A vonal fölött, merőlegesen' },
+    k12: { type: 'point', x: 810, y: 780, r: 20, label: 'a piros cél közepe' },
   };
 
   const DEFAULT_START = {
     palya1: { x: 120, y: 120, heading: 0 },
     palya2: { x: 495, y: 110, heading: 0 },
     rajzlap: { x: 275, y: 180, heading: 0 },
+    edzo: { x: 150, y: 150, heading: 0 },
   };
 
   // ------------------------------------------------------------ tárolás
@@ -51,16 +72,30 @@
   // ------------------------------------------------------------ a robot méretei
   // Amit a tanár/diák a „Robot méretei” ablakban megad (mm). Ebből számoljuk a
   // szimulátor robotját: a fizika, a rajz, az ütközés és a bíró is ezt használja.
-  const DIM_DEFAULT = { wheel: 56, axle: 112, length: 160, width: 128, rear: 60, pointer: 20 };
+  const DIM_DEFAULT = { wheel: 56, axle: 112, length: 160, width: 128, rear: 60, pointer: 20, sensFwd: 20, color2: true, sensGap: 60 };
   function dims() { return Object.assign({}, DIM_DEFAULT, store.get('robotDims', {})); }
   function ROBOT() {
     const d = dims(), front = d.length - d.rear;
     return Object.assign({}, Sim.ROBOT_DEFAULT, {
       wheelDiameter: d.wheel, axleTrack: d.axle, bodyFront: front, bodyRear: d.rear, bodyWidth: d.width,
       pointer: front + d.pointer,
-      colorSensor: { forward: Math.max(0, front - 20), side: 0 },
+      colorSensor: { forward: Math.max(0, front - d.sensFwd), side: d.color2 ? -d.sensGap / 2 : 0 },
+      colorSensors: d.color2
+        ? { C: { forward: Math.max(0, front - d.sensFwd), side: -d.sensGap / 2 }, F: { forward: Math.max(0, front - d.sensFwd), side: d.sensGap / 2 } }
+        : { C: { forward: Math.max(0, front - d.sensFwd), side: 0 } },
       distanceSensor: { forward: Math.max(0, front - 5), side: 0 },
+      ports: Object.assign({}, Sim.ROBOT_DEFAULT.ports, { F: d.color2 ? 'color' : null }),
     });
+  }
+  // Valóság mód: minden futásnál kicsit más a robot (kerekek, tengelytáv, letevés),
+  // mint a valóságban. Ideiglenes értékek – az órai mérések után pontosítjuk.
+  function noisyRobot(R) {
+    const u = (a) => (Math.random() * 2 - 1) * a;
+    const n = { wl: u(0.006), wr: u(0.006), ax: u(0.015), h: u(1.5), x: u(2), y: u(2) };
+    return {
+      robot: Object.assign({}, R, { wheelDiameterL: R.wheelDiameter * (1 + n.wl), wheelDiameterR: R.wheelDiameter * (1 + n.wr), axleTrackReal: R.axleTrack * (1 + n.ax) }),
+      n,
+    };
   }
 
   // Felhős mód: belépés nélkül a pálya nem használható (kivéve a tanárt).
@@ -134,7 +169,7 @@
       ta.dispatchEvent(new Event('input'));
     }
   });
-  const PY_SAMPLE_LABELS = { beep: 'Első csipogás (1. küldetés)', square: 'Bűvös négyzet (2. küldetés)', k3: 'Fordulás 90 fokkal (3. küldetés)', gyro: 'Négyzet giroszkóppal (4. küldetés)', color: 'Mit lát a színszenzor?', k5: 'A robot új szót tanul: négyzet (5. küldetés)', k6: 'Dobogó – kezdés (6. küldetés)', k7: 'Ébred a farm – kézzel (7. küldetés)', dobogo: '🔑 TANÁRI: dobogó – teljes megoldás', wro: '🔑 TANÁRI: farm – felvesz() és lerak() paranccsal' };
+  const PY_SAMPLE_LABELS = { beep: 'Első csipogás (1. küldetés)', square: 'Bűvös négyzet (2. küldetés)', k3: 'Fordulás 90 fokkal (3. küldetés)', gyro: 'Négyzet giroszkóppal (4. küldetés)', color: 'Mit lát a színszenzor?', k5: 'A robot új szót tanul: négyzet (5. küldetés)', k6: 'Dobogó – kezdés (6. küldetés)', k7: 'Ébred a farm – kézzel (7. küldetés)', k8: 'Tolass a falhoz! (8. küldetés)', k9: 'Menj a vonalig! (9. küldetés)', k10: 'Igazodj a vonalhoz két szenzorral (10. küldetés)', k11: 'Kövesd a vonalat! (11. küldetés)', k12: 'Hosszú út újrakalibrálással (12. küldetés)', dobogo: '🔑 TANÁRI: dobogó – teljes megoldás', wro: '🔑 TANÁRI: farm – felvesz() és lerak() paranccsal' };
   const TEACHER_SAMPLES = new Set(['dobogo', 'wro']);
   // Tanári mód: palya/index.html?tanar  (a böngésző megjegyzi; ?tanar=0 kikapcsolja)
   (function () {
@@ -359,7 +394,7 @@
     ctx.strokeRect(-22 * s, -10 * s, 44 * s, 56 * s);
     // színszenzor (lila) és távolságérzékelő (türkiz)
     ctx.fillStyle = '#8A5CF6';
-    ctx.fillRect((R.colorSensor.side - 7) * s, -(R.colorSensor.forward + 7) * s, 14 * s, 14 * s);
+    Object.values(R.colorSensors || { C: R.colorSensor }).forEach((c) => ctx.fillRect((c.side - 7) * s, -(c.forward + 7) * s, 14 * s, 14 * s));
     ctx.fillStyle = '#18A3B8';
     ctx.fillRect(-18 * s, -(R.distanceSensor.forward + 5) * s, 36 * s, 8 * s);
     // mutató
@@ -541,6 +576,48 @@
     ctx.restore();
   }
 
+  // ------------------------------------------------------------ küldetés célja (edzőpálya)
+  function missionTarget() {
+    if (state.mat !== 'edzo') return null;
+    return MISSION_TARGET[store.get('slot', '')] || null;
+  }
+  function drawMissionTarget() {
+    const t = missionTarget(); if (!t) return;
+    const s = scale();
+    ctx.save();
+    if (t.type === 'point') {
+      const [px, py] = toPx(t.x, t.y);
+      ctx.fillStyle = 'rgba(255,90,95,.18)'; ctx.strokeStyle = '#FF5A5F'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(px, py, t.r * s, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fillStyle = '#FF5A5F'; ctx.fill();
+    } else {
+      const [, y1] = toPx(0, t.y + t.tol), [, y2] = toPx(0, t.y - t.tol);
+      ctx.fillStyle = 'rgba(255,90,95,.16)'; ctx.fillRect(0, y1, canvas.width, y2 - y1);
+      ctx.strokeStyle = '#FF5A5F'; ctx.setLineDash([10, 8]); ctx.lineWidth = 2;
+      const [, yc] = toPx(0, t.y); ctx.beginPath(); ctx.moveTo(0, yc); ctx.lineTo(canvas.width, yc); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function checkMissionTarget(res) {
+    const t = missionTarget(); if (!t || !res.final) return;
+    const f = res.final, P = ROBOT().pointer, h = f.heading * Math.PI / 180;
+    const tip = [f.x + Math.sin(h) * P, f.y + Math.cos(h) * P];
+    let ok, txt;
+    if (t.type === 'point') {
+      const d = Math.hypot(tip[0] - t.x, tip[1] - t.y);
+      ok = d <= t.r; txt = `a mutató ${fmt(d / 10, 1)} cm-re állt meg a cél közepétől`;
+    } else {
+      const d = tip[1] - t.y;
+      ok = Math.abs(d) <= t.tol; txt = `a mutató ${fmt(Math.abs(d) / 10, 1)} cm-rel ${d > 0 ? 'túlment' : 'előtte állt meg'}`;
+      if (t.heading != null) {
+        let e = ((f.heading - t.heading) % 360 + 540) % 360 - 180;
+        txt += `, és ${fmt(Math.abs(e), 1)}°-ot áll ferdén`;
+        if (Math.abs(e) > t.htol) ok = false;
+      }
+    }
+    log((ok ? '🎯 Cél teljesítve! ' : '🎯 Még nem sikerült: ') + txt + '. (Cél: ' + t.label + '.)', ok ? 'c-ok' : 'c-hint');
+  }
+
   function render() {
     if (state.aim && $('toolSel').value === 'aim') updateAim();
     // a robot elejéhez kötött mérőszalag együtt mozog a robottal
@@ -555,6 +632,7 @@
     }
     const playT = state.play ? state.play.t : (state.result ? Infinity : -1);
     if (state.mat === 'rajzlap' && $('optTarget').checked) drawTarget();
+    drawMissionTarget();
     if ($('optTrail').checked && state.result && state.result.mat === state.mat) {
       if (state.mat === 'rajzlap') drawPath(state.result.frames, playT, '#1D2B44', false, 4); // toll
       else drawPath(state.result.frames, playT, '#2F6FED', false);
@@ -713,7 +791,7 @@
   function updateRobotSummary() {
     const d = dims(), el = $('robotSummary'); if (!el) return;
     const changed = JSON.stringify(d) !== JSON.stringify(DIM_DEFAULT);
-    el.innerHTML = `Kerék ${fmt(d.wheel, d.wheel % 1 ? 1 : 0)} mm · tengelytáv ${fmt(d.axle, d.axle % 1 ? 1 : 0)} mm · ${d.length} × ${d.width} mm${changed ? ' <b style="color:#B45309">(saját)</b>' : ' (iskolai alap)'}`;
+    el.innerHTML = `Kerék ${fmt(d.wheel, d.wheel % 1 ? 1 : 0)} mm · tengelytáv ${fmt(d.axle, d.axle % 1 ? 1 : 0)} mm · ${d.length} × ${d.width} mm · ${d.color2 ? '2 színszenzor (C, F)' : '1 színszenzor (C)'}${changed ? ' <b style="color:#B45309">(saját)</b>' : ' (iskolai alap)'}`;
   }
   function updateTele(p, t) {
     // a műszerfal a robot ELEJÉNEK (a mutató végének) helyét mutatja
@@ -807,7 +885,7 @@
     store.set('starts', state.starts);
     render();
   }));
-  ['optTrail', 'optGhost', 'optTarget', 'optStart'].forEach((id) => $(id).addEventListener('change', render));
+  ['optTrail', 'optGhost', 'optTarget', 'optStart', 'optReal'].forEach((id) => $(id).addEventListener('change', render));
   function updateToolHint() {
     const tool = $('toolSel').value, h = $('toolHint');
     $('robotAngleBtn').hidden = tool !== 'angle';
@@ -990,6 +1068,13 @@
     log('▶ Program indul…', 'c-muted');
     $('runBtn').disabled = true;
     const start = Object.assign({}, state.starts[state.mat]);
+    let robotRun = ROBOT();
+    if ($('optReal') && $('optReal').checked) {
+      const nr = noisyRobot(robotRun), n = nr.n, pc = (v) => (Math.abs(v) < 0.0005 ? '±' : v >= 0 ? '+' : '−') + fmt(Math.abs(v * 100), 1) + '%';
+      robotRun = nr.robot;
+      start.heading += n.h; start.x += n.x; start.y += n.y;
+      log(`🎲 Valóság mód: bal kerék ${pc(n.wl)}, jobb kerék ${pc(n.wr)}, tengelytáv ${pc(n.ax)}, letevés ${n.h >= 0 ? '+' : '−'}${fmt(Math.abs(n.h), 1)}°`, 'c-muted');
+    }
     let code = ta.value;
     state.lastBlock = null;
     if (state.mode === 'blocks') {
@@ -1006,7 +1091,7 @@
     }
     let res;
     try {
-      res = await RT.runProgram(state.pyodide, state.shim, code, { mat: state.mat, start, robot: ROBOT() }, sampler);
+      res = await RT.runProgram(state.pyodide, state.shim, code, { mat: state.mat, start, robot: robotRun }, sampler);
     } catch (e) {
       log('A szimulátor hibába futott: ' + e, 'c-err');
       $('runBtn').disabled = false;
@@ -1085,6 +1170,7 @@
     $('stopBtn').disabled = true;
     $('runBtn').disabled = false;
     if (!r.error && !r.timeout) log('✓ Kész · ' + fmt(r.duration / 1000, 1) + ' mp', 'c-ok');
+    if (!r.error && !r.timeout) checkMissionTarget(r);
     if (state.wro && state.wro.judge) {
       applyJudge(Infinity);
       const sc = state.wro.judge.score;
@@ -1174,8 +1260,12 @@
       setWro(false);
       state.mat = ms.mat; store.set('mat', state.mat); $('matSel').value = state.mat;
       state.pose = null; state.result = null; state.ghost = null; updateMatUi(); fitCanvas();
-    } else if (!ms.mat && state.mat === 'rajzlap') {
+    } else if (!ms.mat && (state.mat === 'rajzlap' || state.mat === 'edzo')) {
       state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = state.mat; updateMatUi(); fitCanvas();
+    }
+    if (ms.start) {
+      state.starts[ms.mat] = Object.assign({}, ms.start); store.set('starts', state.starts);
+      state.pose = null; state.result = null; state.ghost = null;
     }
     const key = ms[mode];
     if (mode === 'blocks') {
@@ -1190,7 +1280,7 @@
   updateToolHint();
   log('Írd meg a programot, aztán nyomd meg az Indulj! gombot.', 'c-muted');
 
-  Promise.all([loadImage('palya1'), loadImage('palya2'), loadImage('rajzlap')]).then(render).catch(() => log('A pályakép nem töltődött be.', 'c-err'));
+  Promise.all([loadImage('palya1'), loadImage('palya2'), loadImage('rajzlap'), loadImage('edzo')]).then(render).catch(() => log('A pályakép nem töltődött be.', 'c-err'));
   render();
 
   (async () => {
@@ -1210,8 +1300,8 @@
   // ------------------------------------------------------------ robot méretei ablak
   (function robotDialog() {
     const dlg = $('robotDlg'); if (!dlg) return;
-    const F = { wheel: 'rdWheel', axle: 'rdAxle', length: 'rdLength', width: 'rdWidth', rear: 'rdRear', pointer: 'rdPointer' };
-    const fill = (d) => Object.entries(F).forEach(([k, id]) => { $(id).value = d[k]; });
+    const F = { wheel: 'rdWheel', axle: 'rdAxle', length: 'rdLength', width: 'rdWidth', rear: 'rdRear', pointer: 'rdPointer', sensFwd: 'rdSensFwd', sensGap: 'rdSensGap' };
+    const fill = (d) => { Object.entries(F).forEach(([k, id]) => { $(id).value = d[k]; }); $('rdColor2').checked = !!d.color2; };
     $('robotBtn').addEventListener('click', () => { fill(dims()); $('rdMsg').textContent = ''; dlg.showModal(); });
     $('robotClose').addEventListener('click', () => dlg.close());
     $('robotReset').addEventListener('click', () => { fill(DIM_DEFAULT); $('rdMsg').textContent = 'Visszaállítottam az iskolai alapértékeket. Nyomd meg a Mentést!'; });
@@ -1222,7 +1312,10 @@
         if (!isFinite(v)) { $('rdMsg').textContent = 'Minden mezőbe írj egy számot!'; return; }
         d[k] = v;
       }
-      const err = d.wheel < 20 || d.wheel > 150 ? 'A kerék átmérője 20 és 150 mm között legyen.'
+      d.color2 = $('rdColor2').checked;
+      const err = d.sensFwd < 0 || d.sensFwd > d.length ? 'A színszenzor a roboton belül legyen (G).'
+        : d.color2 && (d.sensGap < 10 || d.sensGap > d.width) ? 'A két színszenzor távolsága 10 mm és a robot szélessége között legyen (H).'
+        : d.wheel < 20 || d.wheel > 150 ? 'A kerék átmérője 20 és 150 mm között legyen.'
         : d.axle < 40 || d.axle > 300 ? 'A tengelytáv 40 és 300 mm között legyen.'
         : d.length < 60 || d.length > 400 ? 'A hossz 60 és 400 mm között legyen.'
         : d.width < 60 || d.width > 400 ? 'A szélesség 60 és 400 mm között legyen.'
