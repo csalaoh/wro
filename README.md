@@ -20,6 +20,7 @@ SPIKE Prime szimulátor Pybricks Pythonhoz és SPIKE App blokkokhoz.
 | `szotar.html`, `assets/dictionary.js` | a Kódszótár (új parancs: a dictionary.js-be) |
 | `jatekok.html`, `assets/games.js` | játékok: Légy te a robot!, Fok-tippelő, Hibavadász, Rakd sorba! |
 | `wro.html` | a WRO bemutatása gyerekeknek, a házi WRO és az út a versenyig |
+| `sugo.html`, `assets/sugo/` | részletes használati útmutató képekkel (otthoni gyakorláshoz) |
 | `belepes.html` | diákbelépés: csapat → kódnév → 3 képes kép-kód (csak felhős módban) |
 | `tanar.html` | tanári felület: ki hol tart, diákok, feloldások, mentés |
 | `assets/config.js` | a Supabase címe és nyilvános kulcsa; üresen = helyi mód |
@@ -28,6 +29,7 @@ SPIKE Prime szimulátor Pybricks Pythonhoz és SPIKE App blokkokhoz.
 | `.github/workflows/ebreszto.yml` | napi „ébresztő”, hogy az ingyenes Supabase ne aludjon el |
 | `assets/common.css`, `assets/common.js` | közös stílus, csapat, avatár, jelvények |
 | `assets/lessons.js` | a küldetések szövege és programjai (ezt szerkeszd, ha új óra jön) |
+| `assets/practice.js` | a gyakorló feladatok (Pálya1, 10,10-es rajt): célpontok és sorrend |
 | `palya/index.html` | a szimulátor oldala |
 | `palya/sim.js` | szimulációs mag: robotmodell, mozgás, falak, szenzorok |
 | `palya/runtime.js` | a Python és a szimulátor összekötése, idővonal |

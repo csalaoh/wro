@@ -63,6 +63,7 @@
 <script src="assets/cloud.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/lessons.js"></script>
+<script src="assets/practice.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/blockly_compressed.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/blocks_compressed.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/python_compressed.js"></script>
@@ -203,7 +204,7 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
     const s = S.students.find((x) => x.id === S.openStudent);
     if (!s) return;
     const progs = S.programs.filter((p) => p.student_id === s.id);
-    const title = (slot) => { const i = M.findIndex((m) => m.id === slot); return i < 0 ? 'Szabad gyakorlás' : (i + 1) + '. ' + M[i].title; };
+    const title = (slot) => { const i = M.findIndex((m) => m.id === slot); if (i >= 0) return (i + 1) + '. ' + M[i].title; const g = ((window.KodfejtoPractice || {}).TASKS || []).find((t) => t.id === slot); return g ? 'Gyakorlás: ' + g.title : 'Szabad gyakorlás'; };
     el.innerHTML = `<div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="row" style="justify-content:space-between"><h2 style="font-size:28px">${esc(s.codename)} programjai</h2><button class="btn btn-plain btn-sm" id="closeD">Bezár</button></div>
       ${progs.length ? progs.map((p, i) => `<div style="border-top:2px solid var(--sky);padding-top:10px">

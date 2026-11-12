@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Súgó – Kódfejtő Műhely</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/common.css">
+<style>
+  .hero .kicker { font-weight: 800; color: var(--blue); }
+  .hero h1 { font-size: 44px; margin: 6px 0 10px; }
+  .hero p { margin: 0 0 8px; font-size: 18.5px; max-width: 860px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .toc a { background: var(--sky); border-radius: 999px; padding: 6px 14px; font-weight: 800; font-size: 15px; color: var(--ink); text-decoration: none; }
+  .toc a:hover { background: #D6E6FF; }
+  section.card { scroll-margin-top: 16px; }
+  section.card h2 { font-size: 32px; margin-bottom: 6px; }
+  section.card h3 { font-size: 22px; margin: 22px 0 6px; }
+  section.card p, section.card li { font-size: 17px; line-height: 1.55; }
+  section.card p { margin: 6px 0; }
+  .lead { font-size: 18.5px !important; color: var(--muted); }
+  figure { margin: 14px 0; }
+  figure img { display: block; max-width: 100%; height: auto; border-radius: 14px; border: 2px solid var(--line); background: #fff; }
+  figcaption { font-size: 14.5px; color: var(--muted); margin-top: 6px; }
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .pair3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .side { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+  ol.legend { margin: 8px 0; padding: 0; list-style: none; counter-reset: n; display: flex; flex-direction: column; gap: 8px; }
+  ol.legend li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: start; }
+  ol.legend li::before { counter-increment: n; content: counter(n); width: 30px; height: 30px; border-radius: 50%; background: #E0245E; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 15px; margin-top: 1px; }
+  .note { background: #FFF6DB; border-radius: 14px; padding: 12px 16px; margin: 12px 0; }
+  .tip { background: #E8F8EF; border-radius: 14px; padding: 12px 16px; margin: 12px 0; }
+  .warn { background: #FFE9EA; border-radius: 14px; padding: 12px 16px; margin: 12px 0; }
+  .note b:first-child, .tip b:first-child, .warn b:first-child { display: block; margin-bottom: 2px; }
+  table.t { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 16px; }
+  table.t th, table.t td { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--line); vertical-align: top; }
+  table.t th { background: var(--sky); }
+  table.t td:first-child { white-space: nowrap; font-weight: 800; }
+  code { font-family: 'JetBrains Mono', monospace; background: #EEF2F8; border-radius: 6px; padding: 1px 6px; font-size: 14.5px; }
+  pre.code { margin: 8px 0; background: #14203A; color: #E6EDF7; border-radius: 14px; padding: 14px 18px; font-size: 14px; line-height: 1.6; overflow-x: auto; }
+  .steps { margin: 8px 0; padding-left: 24px; }
+  .steps li { margin-bottom: 8px; }
+  details.faq { border: 2px solid var(--line); border-radius: 14px; padding: 10px 16px; margin: 10px 0; background: #fff; }
+  details.faq summary { cursor: pointer; font-weight: 800; font-size: 18px; }
+  details.faq[open] summary { margin-bottom: 6px; }
+  .kbd { display: inline-block; border: 2px solid var(--line); border-bottom-width: 4px; border-radius: 8px; padding: 0 7px; font-weight: 800; font-size: 14px; background: #fff; }
+  .top { font-size: 15px; font-weight: 800; }
+  @media (max-width: 900px) { .pair, .pair3, .side { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; } }
+</style>
+</head>
+<body>
+<header id="siteHeader"></header>
+<main class="page">
+
+<div class="card hero">
+  <span class="kicker">Súgó</span>
+  <h1>Hogyan használd a Kódfejtő Műhelyt?</h1>
+  <p>Ez az oldal arra jó, ha otthon gyakorolnál, de nem emlékszel pontosan, mit csináltunk az órán. Itt mindent megtalálsz: mi hol van, melyik gomb mire való, mit jelentenek a jelek és a számok.</p>
+  <p>A képeken a <b style="color:#E0245E">piros számok</b> ugyanazok, mint a kép alatti listában.</p>
+  <nav class="toc" aria-label="Tartalom">
+    <a href="#attekintes">Mi hol van?</a>
+    <a href="#belepes">Belépés</a>
+    <a href="#fooldal">Főoldal</a>
+    <a href="#kuldetesek">Küldetések</a>
+    <a href="#palya">A virtuális pálya</a>
+    <a href="#rajt">Rajthelyzet</a>
+    <a href="#robot">Robot méretei</a>
+    <a href="#eszkozok">Mérőeszközök</a>
+    <a href="#gyakorlas">Gyakorló feladatok</a>
+    <a href="#konzol">Mit ír ki a robot?</a>
+    <a href="#ora">Így csináltuk az órán</a>
+    <a href="#valodi">Átvitel a valódi robotra</a>
+    <a href="#szotar">Szótár, játékok, WRO</a>
+    <a href="#gyik">Gyakori kérdések</a>
+  </nav>
+</div>
+
+<!-- ============================================================ -->
+<section class="card" id="attekintes">
+  <h2>Mi hol van?</h2>
+  <p class="lead">Az oldal tetején, a menüben hat rész van. Bármelyikre kattinthatsz, bármikor.</p>
+  <table class="t">
+    <tr><th>Menüpont</th><th>Mire való?</th></tr>
+    <tr><td>Főoldal</td><td>A küldetés-térkép: látod, hol tartasz, mi jön, és milyen jelvényeket szereztél.</td></tr>
+    <tr><td>Küldetések</td><td>Az órák anyaga: a titkos szabályok, a program soronként elmagyarázva és egy mini kihívás. Lent vannak a <b>gyakorló feladatok</b> is.</td></tr>
+    <tr><td>Pálya</td><td>A virtuális pálya. Itt írod meg és futtatod a programot robot nélkül. Ez a legfontosabb rész.</td></tr>
+    <tr><td>Szótár</td><td>Az összes parancs egy helyen, blokkal és Pythonban egymás mellett.</td></tr>
+    <tr><td>Játékok</td><td>Rövid fejtörők: kitalálni, hova megy a robot, mennyit forduljon, hol a hiba.</td></tr>
+    <tr><td>WRO</td><td>Minden a robotversenyről: mi az, hogyan zajlik, mit gyakorolj hozzá.</td></tr>
+    <tr><td>Súgó</td><td>Ez az oldal.</td></tr>
+  </table>
+  <div class="note"><b>Hol mentődik a munkád?</b>Ha belépéssel használod az oldalt, a programjaid és a jelvényeid a műhely tárhelyére mentődnek, és a tanárod is látja őket. Belépés nélkül (helyi módban) minden csak abban a böngészőben marad, amelyikben dolgoztál. Ha másik gépre ülsz, ott üres lesz.</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="belepes">
+  <h2>Belépés a kép-kódoddal</h2>
+  <p class="lead">Jelszó helyett 3 képet kell megnyomnod, sorban. Ezt a kártyát a tanárodtól kaptad.</p>
+  <div class="pair3">
+    <figure><img src="assets/sugo/belepes1.jpg" alt="1. lépés: a csapat kiválasztása" loading="lazy"><figcaption>1. Válaszd ki a csapatodat.</figcaption></figure>
+    <figure><img src="assets/sugo/belepes2.jpg" alt="2. lépés: a kódnév kiválasztása" loading="lazy"><figcaption>2. Kattints a kódnevedre.</figcaption></figure>
+    <figure><img src="assets/sugo/belepes3.jpg" alt="3. lépés: a kép-kód megnyomása" loading="lazy"><figcaption>3. Nyomd meg a 3 képet sorban. A pöttyök mutatják, hányat nyomtál már.</figcaption></figure>
+  </div>
+  <ul>
+    <li>Ha elnyomtad, a <b>⌫ Vissza</b> gomb törli az utolsó képet.</li>
+    <li>Ha többször rosszul próbálkozol, a belépés egy kis időre lezár. Várj, aztán próbáld újra.</li>
+    <li>Ha elfelejtetted a kép-kódodat, szólj a tanárodnak: ő meg tudja nézni.</li>
+    <li><b>Kilépés:</b> kattints jobb fent az avatárodra, és nyomd meg a <b>Kilépek</b> gombot. Közös gépen mindig lépj ki a végén!</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="fooldal">
+  <h2>Főoldal: a küldetés-térkép</h2>
+  <div class="side">
+    <figure><img src="assets/sugo/fooldal.jpg" alt="A főoldal jelölésekkel" loading="lazy"></figure>
+    <div>
+      <ol class="legend">
+        <li><span><b>Menü.</b> Innen jutsz el minden részhez. A sötét gomb mutatja, hol vagy most.</span></li>
+        <li><span><b>Az avatárod.</b> Rákattintva beállíthatod a csapatodat (blokkos, Python, haladó) és a robotfigurád kinézetét. Itt van a <b>Kilépek</b> gomb is. A csapat azért fontos, mert ettől függ, hogy blokkot vagy Pythont mutat az oldal.</span></li>
+        <li><span><b>Küldetés-térkép.</b> Minden kör egy óra. A zöld pipa: kész. A sárga: ez jön most. A kék: már nyitva van. A szürke kérdőjel: titkos, majd a tanárod nyitja meg.</span></li>
+        <li><span><b>Indulhat a küldetés!</b> Egyenesen a következő küldetéshez visz.</span></li>
+      </ol>
+      <p>Lejjebb vannak a <b>jelvényeid</b>. Egy jelvényt akkor kapsz meg, ha egy küldetés végén megnyomod a <b>Teljesítettem!</b> gombot.</p>
+      <figure><img src="assets/sugo/beallito.jpg" alt="Az avatár és a csapat beállítása" loading="lazy"><figcaption>Az avatár-ablak: csapat, kódnév, kinézet.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="kuldetesek">
+  <h2>Küldetések</h2>
+  <p class="lead">Minden küldetés egy foglalkozás anyaga. Ha nem emlékszel, mit tanultunk, először ide nézz.</p>
+  <div class="side">
+    <figure><img src="assets/sugo/kuldetes.jpg" alt="Egy küldetés oldala jelölésekkel" loading="lazy"></figure>
+    <div>
+      <ol class="legend">
+        <li><span><b>A küldetés története</b>, és hogy mit tanulsz benne (a kék címkék).</span></li>
+        <li><span><b>A titkos kódfejtő szabályok.</b> Ezek a legfontosabb gondolatok, amiket meg kell jegyezni.</span></li>
+        <li><span><b>A program.</b> Ez az a program, amit az órán megírtunk. A blokkos csapat blokkokat lát, a Python-csapat Python-kódot.</span></li>
+        <li><span><b>Magyarázat soronként.</b> Mindegyik sorról leírja, mit csinál, és miért kell.</span></li>
+        <li><span><b>Mini kihívás.</b> Egy kis feladat, amivel otthon gyakorolhatsz.</span></li>
+        <li><span><b>Kipróbálom a pályán:</b> megnyitja a virtuális pályát, és betölti ezt a programot. Ha kész vagy, nyomd meg a <b>Teljesítettem!</b> gombot: megkapod a jelvényt.</span></li>
+      </ol>
+      <div class="tip"><b>Tipp</b>Ha a kódot nem érted, keresd meg a parancsot a <a href="szotar.html">Szótárban</a>: ott példát is találsz hozzá.</div>
+    </div>
+  </div>
+  <h3>Gyakorló feladatok</h3>
+  <p>A Küldetések oldal alján van 8 gyakorló feladat az alapmozgásokhoz (előre, fordulás, célba érés, hazajövés). A csillagok a nehézséget jelzik: ★ könnyű, ★★ közepes, ★★★ nehéz. Ha rákattintasz, a pálya nyílik meg a feladattal. Részletesen <a href="#gyakorlas">lent olvashatsz róluk</a>.</p>
+  <figure><img src="assets/sugo/gyakorlo_lista.jpg" alt="A gyakorló feladatok listája" loading="lazy"></figure>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="palya">
+  <h2>A virtuális pálya</h2>
+  <p class="lead">Itt írod meg a programot, és megnézed, mit csinálna vele a robot. Ugyanaz a program fut, amit a valódi robotra is feltöltesz.</p>
+  <figure><img src="assets/sugo/palya.jpg" alt="A virtuális pálya oldala jelölésekkel" loading="lazy"></figure>
+  <ol class="legend">
+    <li><span><b>Pályaválasztó.</b> Pálya1 (a farm), Pálya2, a házi WRO-pálya, a rajzlap (ott a robot tollal rajzol) és az Edzőpálya (WRO-méretű, falakkal és vonalakkal az igazodáshoz).</span></li>
+    <li><span><b>Indulj!</b> Elindítja a programot. Az első betöltés pár másodpercig tart, addig a gomb szürke.</span></li>
+    <li><span><b>Állj!</b> Megállítja a futó programot.</span></li>
+    <li><span><b>Vissza a rajtra.</b> A robotot visszateszi a rajthelyére. Az előző út halványan megmarad, hogy össze tudd hasonlítani.</span></li>
+    <li><span><b>Python / Blokk fül.</b> Itt váltasz a kétféle programozás között.</span></li>
+    <li><span><b>Minta betöltése.</b> Kész mintaprogramok a küldetésekből. Ha véletlenül lecserélted a programodat, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza.</span></li>
+    <li><span><b>A szerkesztő.</b> Ide írod a programot (vagy ide húzod a blokkokat). Futás közben kiemeli azt a sort vagy blokkot, amelyiknél a robot éppen tart.</span></li>
+    <li><span><b>A robot hubja.</b> A hub kijelzője (5×5 pötty) és a középső gomb fénye. Amit a programod kiír vagy kigyújt, itt látod.</span></li>
+    <li><span><b>Konzol.</b> Itt üzen a robot: hibák, tippek, eredmények. A jelek magyarázata <a href="#konzol">lent van</a>.</span></li>
+    <li><span><b>A pálya.</b> Felülnézetből látod a robotot. A kék vonal az útja, a narancs szaggatott keret a rajthelye. A piros pöcök a robot eleje: ezzel „mutat” a robot, ennek kell a célba érnie.</span></li>
+    <li><span><b>Műszerfal.</b> Hol van a robot eleje (x, y centiméterben a pálya bal alsó sarkától), merre néz (irány fokban), és mennyi ideje megy.</span></li>
+    <li><span><b>Gyakorlás.</b> Itt választasz gyakorló feladatot. A célok megszámozva megjelennek a pályán.</span></li>
+    <li><span><b>Megjelenítés.</b> Nyomvonal, rajtvonal, előző próba be- és kikapcsolása, a <a href="#eszkozok">mérőeszközök</a> és a lejátszás sebessége (1×, 2×, 4×).</span></li>
+    <li><span><b>Rajthelyzet.</b> Hova tedd le a robotot. <a href="#rajt">Részletesen lent.</a></span></li>
+    <li><span><b>Robot.</b> A robot méretei és a <b>Valóság mód</b>. <a href="#robot">Részletesen lent.</a></span></li>
+  </ol>
+  <div class="note"><b>A pálya iránya</b>A pályán az irányt fokban mérjük. 0° = felfelé, 90° = jobbra, 180° = lefelé, 270° = balra. A robot <b>jobbra</b> forduláskor <b>pozitív</b>, balra negatív szöggel fordul: <code>robot.turn(90)</code> jobbra, <code>robot.turn(-90)</code> balra.</div>
+  <h3>Blokkos programozás</h3>
+  <div class="side">
+    <figure><img src="assets/sugo/blokk.jpg" alt="A blokkos szerkesztő" loading="lazy"></figure>
+    <div>
+      <p>Bal oldalt a színes kategóriák vannak (Események, Mozgás, Motorok…), pont úgy, mint a SPIKE appban. Kattints egy kategóriára, és húzd át a blokkot a munkaterületre, a sárga <b>when program starts</b> alá.</p>
+      <p>A program eleje mindig ugyanaz: megmondjuk, melyik két motor visz (<b>A+B</b>), mennyit tesz meg a robot egy kerékfordulattal (az iskolai robotnál kb. <b>17,6 cm</b>, mert a kerék kerülete π × 5,6 cm; a régebbi mintákban 17,5 szerepel, az is majdnem jó), és milyen gyorsan menjen.</p>
+      <div class="warn"><b>Vigyázz a fordulásnál!</b>A blokkos „move right for 90 degrees” a <b>kerék</b> fordulását jelenti, nem a robotét. Az iskolai robotnál 2 kerékfok ≈ 1 robotfok, vagyis 90°-os forduláshoz kb. <b>180</b> kerékfok kell. Ezt fedeztük fel a 3. küldetésben.</div>
+      <p>Blokkot törölni: húzd vissza a bal oldali sávba, vagy jelöld ki, és nyomd meg a <span class="kbd">Delete</span> gombot.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="rajt">
+  <h2>Rajthelyzet: hova tedd le a robotot?</h2>
+  <p class="lead">A szimulátor csak akkor mutatja meg, mit csinál a valódi robot, ha <b>ugyanonnan, ugyanúgy</b> indul. Ezért a rajtot mindig kimérjük.</p>
+  <div class="pair">
+    <figure><img src="assets/sugo/rajt_palya.jpg" alt="A rajthelyzet a pályán: két narancs méretvonal" loading="lazy"><figcaption>A narancs vonalak megmutatják, milyen messze van a robot a pálya szélétől.</figcaption></figure>
+    <figure><img src="assets/sugo/rajt_panel.jpg" alt="A rajthelyzet panel a három számmal" loading="lazy"><figcaption>Ugyanez számokkal. A számokat át is írhatod.</figcaption></figure>
+  </div>
+  <h3>Az alaprajt: 10,10</h3>
+  <p>Hacsak a feladat mást nem mond, a robot mindig a <b>10,10-es rajtról</b> indul:</p>
+  <ul>
+    <li>a robot <b>hátulja 10 cm-re</b> van a pálya <b>alsó</b> szélétől,</li>
+    <li>a robot <b>bal oldala 10 cm-re</b> van a pálya <b>bal</b> szélétől,</li>
+    <li>a robot <b>felfelé</b> néz (0°).</li>
+  </ul>
+  <p>Ha elmozdítottad a robotot, a <b>⌂ Alaprajt (10,10)</b> gomb visszateszi ide.</p>
+  <h3>Így tedd le a valódi robotot</h3>
+  <ol class="steps">
+    <li>Tegyél egy vonalzót a pálya alsó széle mellé, merőlegesen. Mérj fel 10 cm-t, és ide igazítsd a robot <b>hátulját</b> (a leghátsó részét).</li>
+    <li>Ugyanígy mérj 10 cm-t a bal szélétől, ide igazítsd a robot <b>bal oldalát</b> (a legszélső részét, nem a kereket!).</li>
+    <li>Nézd meg felülről, hogy a robot egyenesen áll-e. Egy fok ferdeség 1 méteren már majdnem 2 cm eltérés!</li>
+    <li>Ne told meg a robotot indításkor: a gombot óvatosan nyomd meg.</li>
+  </ol>
+  <h3>Más rajt beállítása</h3>
+  <ul>
+    <li><b>Egérrel:</b> fogd meg az álló robotot a pályán, és húzd el. 5 mm-es lépésekben igazodik, hogy könnyű legyen kimérni.</li>
+    <li><b>Forgatás:</b> a ↺ 90°, ↺ 5°, ↻ 5°, ↻ 90° gombokkal.</li>
+    <li><b>Billentyűzettel:</b> írd be a számokat a narancs dobozba (centiben, tizedesvesszővel is: 12,5), és nyomj <span class="kbd">Enter</span>-t. Az irányhoz fokot írj (0 = felfelé, 90 = jobbra…).</li>
+  </ul>
+  <div class="note"><b>Jó tudni</b>A böngésző megjegyzi a rajthelyzetet. A küldetések és a gyakorló feladatok viszont a saját rajtjukat állítják be, amikor megnyitod őket.</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="robot">
+  <h2>A robot méretei és a Valóság mód</h2>
+  <div class="side">
+    <figure><img src="assets/sugo/robot_meretei.jpg" alt="A Robot méretei ablak" loading="lazy"></figure>
+    <div>
+      <p>A <b>⚙ Robot méretei</b> gombbal nyílik. Itt adjuk meg, mekkora a mi robotunk. Az órán egyszer kimértük, utána nem kell hozzányúlni. Az iskolai robot (Driving Base 2) alapértékei vannak beírva; az <b>Iskolai alapértékek</b> gomb ezeket hozza vissza.</p>
+      <table class="t">
+        <tr><th>Betű</th><th>Mit jelent?</th></tr>
+        <tr><td>A</td><td>A kerék átmérője (56 mm). Ettől függ, mennyit megy előre a robot egy kerékfordulattal.</td></tr>
+        <tr><td>B</td><td>Tengelytáv: a két kerék közepe közti távolság (112 mm). Ettől függ, mennyit fordul a robot. Ha a valódi robot <b>rosszul fordul</b>, általában ez az oka.</td></tr>
+        <tr><td>C, D</td><td>A robot hossza és szélessége a legszélső pontoktól mérve.</td></tr>
+        <tr><td>E</td><td>A kerekek közepe milyen messze van a robot hátuljától.</td></tr>
+        <tr><td>F</td><td>A piros mutató: mennyivel nyúlik ki a robot eleje elé. A célokhoz mindig ennek a végét visszük.</td></tr>
+        <tr><td>G, H</td><td>Hol vannak a színszenzorok: milyen messze a robot elejétől, és (ha kettő van) milyen messze egymástól.</td></tr>
+      </table>
+      <div class="warn"><b>Fontos</b>Ha a programodban más kerékméret vagy tengelytáv szerepel (<code>wheel_diameter=…</code>, <code>axle_track=…</code>), mint itt, a konzol szól. A kettőnek egyeznie kell!</div>
+      <h3>Valóság mód</h3>
+      <p>A szimulátor robotja tökéletes. A valódi nem az: a kerekek kicsit eltérnek, a robotot sosem tesszük le pontosan egyenesen. Ha bekapcsolod a <b>Valóság módot</b>, minden futásnál kicsit más lesz a robot, mint a valóságban. A konzol 🎲 jellel kiírja, mennyi volt az eltérés. Így kipróbálhatod, hogy a programod <b>mennyire biztos</b>: ha 5 futásból 5-ször célba ér, jó eséllyel a valódi robot is célba ér.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="eszkozok">
+  <h2>Mérőeszközök</h2>
+  <p class="lead">A <b>Megjelenítés</b> panelen, a <b>Mérés</b> menüben választod ki őket. Egyszerre egy működik. Ha végeztél, állítsd vissza „nincs”-re.</p>
+
+  <h3>📏 Mérőszalag</h3>
+  <div class="pair">
+    <figure><img src="assets/sugo/eszkoz_meroszalag_palya.jpg" alt="Mérőszalag a pályán" loading="lazy"></figure>
+    <div>
+      <p>Kattints két pontra: kiírja, hány centi a távolságuk. Ha az első kattintás a robot elejének (a piros pöcöknek) a közelébe esik, a mérőszalag rátapad, és a robottal együtt mozog.</p>
+      <div class="warn"><b>Ha ⚠ jelet látsz</b>A robot nem a cél felé néz. Fordulás közben a robot eleje elmozdul (egy körív mentén), ezért a lemért távolság <b>nem</b> lesz jó. Előbb fordulj, utána mérj, vagy használd a célzást.</div>
+    </div>
+  </div>
+
+  <h3>📐 Szögmérő</h3>
+  <div class="pair">
+    <figure><img src="assets/sugo/eszkoz_szogmero_palya.jpg" alt="Szögmérő a pályán" loading="lazy"></figure>
+    <div>
+      <p>Három kattintás: először a szög <b>csúcsára</b> (forduláshoz a robot közepére, a két kerék közé), aztán az <b>egyik szárára</b> (amerre most néz), végül a <b>másikra</b> (amerre néznie kell). Kiírja a szöget, és hogy jobbra vagy balra kell-e fordulni.</p>
+      <p>A <b>Mennyit fordult a robot?</b> gomb a robotra teszi a szögmérőt: megmutatja, mennyit fordult el a rajthoz képest.</p>
+    </div>
+  </div>
+
+  <h3>🎯 Célzás</h3>
+  <div class="pair">
+    <figure><img src="assets/sugo/eszkoz_celzas_palya.jpg" alt="Célzás a pályán" loading="lazy"><figcaption>A pöttyözött ív: erre mozdul a robot eleje fordulás közben. A szaggatott vonal: utána egyenesen idáig megy.</figcaption></figure>
+    <div>
+      <p>Kattints oda, ahová a robot <b>elejének</b> el kell jutnia. Kiírja: „Fordulj ennyit, aztán menj előre ennyit.” Halványan megmutatja azt is, hol áll majd a robot.</p>
+      <div class="warn"><b>Csak egy lépésre jó!</b>A célzás mindig onnan számol, ahol a robot <b>most áll</b> a pályán. Ha a második célhoz is célzol, előbb futtasd le az első részt, hogy a robot ott álljon, ahol az első szakasz végén lesz. Ha közben megnyomod a <b>Vissza a rajtra</b> gombot, a célzás megint a rajttól számol, és a második szakasz rossz lesz. Több célhoz használd az útvonaltervezőt!</div>
+    </div>
+  </div>
+
+  <h3>🧭 Útvonaltervező</h3>
+  <div class="pair">
+    <figure><img src="assets/sugo/eszkoz_utvonal_palya.jpg" alt="Útvonaltervező a pályán" loading="lazy"></figure>
+    <figure><img src="assets/sugo/eszkoz_utvonal_panel.jpg" alt="Az útvonaltervező lépései" loading="lazy"></figure>
+  </div>
+  <ol class="steps">
+    <li>Válaszd a <b>Mérés → útvonaltervező</b> menüpontot.</li>
+    <li>Kattints <b>sorban</b> a célokra a pályán. Minden kattintás egy újabb szakasz: egy fordulás és egy egyenes. A zöld szaggatott vonal mutatja az utat, a halvány robotok azt, hol áll meg.</li>
+    <li>A tervező <b>mindig a rajttól</b> indul, és minden szakaszt onnan számol, ahol a robot az előzőnek a végén áll. Így nem tévedsz el a második-harmadik szakasznál.</li>
+    <li>Ha a robotnak vissza kell jönnie, nyomd meg a <b>⌂ Haza a rajtra</b> gombot. Ilyenkor a végén vissza is fordul felfelé. Ha bepipálod a <b>hazafelé tolasson</b> négyzetet, nem fordul meg, hanem tolatva jön vissza.</li>
+    <li>Rossz helyre kattintottál? <b>↶ Utolsó törlése</b>, vagy <b>✕ Mind</b>.</li>
+    <li>Ha kész, nyomd meg a <b>⤓ Beírom a programba</b> gombot. A tervező megírja a programot: Pythonban <code>robot.turn()</code> és <code>robot.straight()</code> sorokat, blokkban fordulás- és mozgásblokkokat. A mostani programodat lecseréli, de előtte megkérdezi.</li>
+  </ol>
+  <div class="note"><b>Miért nem kerek számok?</b>A tervező a fordulást Pythonban tizedfokra, blokkban egész kerékfokra kerekíti, a távolságot milliméterre. A következő szakaszt már a kerekített értékből számolja, így a szimulátorban pontosan oda ér a robot. Blokkban a kiírt „kerékfok” mellett zárójelben a robot fordulása is ott van fokban.</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="gyakorlas">
+  <h2>Gyakorló feladatok</h2>
+  <p class="lead">Rövid feladatok az alapmozgásokhoz a Pálya1-en. Egyre nehezebbek: egy célpont, aztán kettő, három, végül egy nagy kör hazáig.</p>
+  <div class="side">
+    <div>
+      <figure><img src="assets/sugo/gyakorlas_palya.jpg" alt="Teljesített gyakorló feladat a pályán" loading="lazy"><figcaption>A célok megszámozott karikák. Futás után zöld: elérted, piros: nem.</figcaption></figure>
+    </div>
+    <div>
+      <figure><img src="assets/sugo/gyakorlas_panel.jpg" alt="A Gyakorlás panel" loading="lazy"></figure>
+      <figure><img src="assets/sugo/gyakorlas_konzol.jpg" alt="A gyakorló feladat eredménye a konzolon" loading="lazy"></figure>
+    </div>
+  </div>
+  <h3>A szabályok</h3>
+  <ul>
+    <li>Mindegyik feladat a <b>10,10-es rajtról</b> indul. Amikor kiválasztod, a robot oda áll.</li>
+    <li>A célokat <b>sorban</b> kell elérni: előbb az 1-est, aztán a 2-est…</li>
+    <li>Egy cél akkor számít, ha a robot <b>eleje</b> (a piros pöcök) a karikán belül <b>megáll</b>. Ha csak átsuhan rajta, az nem ér. Elég, ha egy pillanatra megáll (például két parancs között).</li>
+    <li>A nagy négyzeteknél 2,5 cm, a kicsiknél 1,5 cm a megengedett eltérés a közepétől.</li>
+    <li>A ⌂ jel azt jelenti: <b>vissza a rajtra</b>. Ilyenkor a robotnak ugyanott és ugyanúgy (felfelé nézve) kell megállnia, ahonnan indult: legfeljebb 2 cm és 5° eltéréssel.</li>
+    <li>Futás után a konzol soronként kiírja: ✔ elérted, ✘ nem érted el, és hogy milyen messze álltál meg.</li>
+    <li>Ha mindet elérted, 🏅 jelet kapsz, és a feladat mellé pipa kerül. Utána próbáld meg <b>Valóság módban</b> is!</li>
+  </ul>
+  <div class="tip"><b>A „Segítség” gomb</b>A Gyakorlás panelen a <b>Segítség</b> feliratra kattintva tippet kapsz a feladathoz.</div>
+  <div class="note"><b>A valódi pályán</b>A célok a Pálya1 elemei (piros, fekete, sárga négyzetek), tehát a valódi pályán is ugyanott vannak. Az 1. feladat célja nem egy pályaelem: oda tegyetek egy kis cellux-csíkot (78 cm-re az alsó széltől, a robot elejével egy vonalban).</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="konzol">
+  <h2>Mit ír ki a robot? (a konzol jelei)</h2>
+  <table class="t">
+    <tr><th>Jel</th><th>Mit jelent?</th></tr>
+    <tr><td>▶</td><td>A program elindult.</td></tr>
+    <tr><td>✓ Kész</td><td>A program végigfutott, és ennyi másodpercig tartott.</td></tr>
+    <tr><td>■</td><td>Te állítottad meg az Állj! gombbal.</td></tr>
+    <tr><td>piros szöveg</td><td><b>Hiba.</b> A robot nem értette a programot. Kiírja, melyik sorban akadt el (a szerkesztőben ez a sor pirosan látszik), és magyarul elmagyarázza, mi lehet a baj. A leggyakoribb: elírt szó, hiányzó zárójel vagy kettőspont, rossz behúzás.</td></tr>
+    <tr><td>💡</td><td><b>Tipp.</b> Nem hiba, de gyanús. Például megírtál egy saját parancsot (<code>def</code>), de sehol nem hívtad meg, vagy lemaradt a zárójel a hívás végéről. Vagy a programban más kerékméret szerepel, mint a robot beállításaiban.</td></tr>
+    <tr><td>🎯</td><td>A küldetés vagy a gyakorló feladat célja: sikerült-e, és ha nem, mennyivel ment mellé.</td></tr>
+    <tr><td>🏅</td><td>Minden célt elértél.</td></tr>
+    <tr><td>🎲</td><td>Valóság mód: ennyivel tért el most a robot a tökéletestől (kerekek, tengelytáv, letevés).</td></tr>
+    <tr><td>⚖</td><td>A házi WRO-pálya bírója: mit csinált jól vagy rosszul a robot (pl. nem a rajtmezőben állt).</td></tr>
+    <tr><td>🏁</td><td>A házi WRO-futam pontszáma.</td></tr>
+    <tr><td>📜 📖</td><td>Betöltöttem egy küldetés vagy a Szótár egyik példáját.</td></tr>
+    <tr><td>🧭</td><td>Az útvonaltervező üzenete.</td></tr>
+    <tr><td>⌂ ⚙</td><td>A rajt vagy a robot beállításai megváltoztak.</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="ora">
+  <h2>Így csináltuk az órán (lépésről lépésre)</h2>
+  <p class="lead">Ezt a sorrendet követtük, amikor a szimulátorban megírt programot a valódi robottal próbáltuk ki. Otthon az 1–6. lépést tudod megcsinálni.</p>
+  <ol class="steps">
+    <li><b>A robot méretei.</b> Egyszer kimértük a robotot, és beírtuk a <b>⚙ Robot méretei</b> ablakba. (Ha nem változott a robot, ezt már nem kell.)</li>
+    <li><b>Rajt.</b> A robot a 10,10-es rajton áll. Ha nem, nyomd meg a <b>⌂ Alaprajt (10,10)</b> gombot.</li>
+    <li><b>Cél kiválasztása.</b> Kinéztünk egy pontot a pályán (vagy kiválasztottunk egy gyakorló feladatot).</li>
+    <li><b>Tervezés.</b> Egy célhoz a <b>célzás</b>, több célhoz az <b>útvonaltervező</b>: kattints a célokra, aztán <b>Beírom a programba</b>.</li>
+    <li><b>Próba a szimulátorban.</b> <b>Indulj!</b> Ha nem talál, nézd meg a konzolt: mennyivel ment mellé, és merre.</li>
+    <li><b>Próba Valóság módban.</b> Kapcsold be, és futtasd le 3–5-ször. Ha mindig célba ér, a program jó.</li>
+    <li><b>Átvitel a valódi robotra</b> (lásd lent), és ugyanarról a rajtról, ugyanígy lerakva elindítjuk.</li>
+    <li><b>Összevetés.</b> Megmérjük, hol állt meg a valódi robot eleje. Ha több próbánál is ugyanarra csúszik el, az a robot hibája (pl. tengelytáv), azt javítjuk. Ha mindig máshova, az a letevés vagy a csúszás.</li>
+  </ol>
+  <div class="tip"><b>Mérési lap</b>Írjátok fel minden próbánál: hányadik próba, melyik program, hol állt meg (x, y centiben a bal alsó saroktól) és merre nézett. Ebből tudjuk majd beállítani, hogy a szimulátor még jobban hasonlítson a valódi robotra.</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="valodi">
+  <h2>Átvitel a valódi robotra</h2>
+  <h3>Python-csapat (Pybricks)</h3>
+  <ol class="steps">
+    <li>A virtuális pályán jelöld ki a programot a szerkesztőben (<span class="kbd">Ctrl</span> + <span class="kbd">A</span>), és másold ki (<span class="kbd">Ctrl</span> + <span class="kbd">C</span>).</li>
+    <li>Nyisd meg a <b>code.pybricks.com</b> oldalt Chrome-ban vagy Edge-ben, és csatlakozz a hubhoz Bluetooth-on (a hubon a Pybricks rendszer fut).</li>
+    <li>Illeszd be a programot (<span class="kbd">Ctrl</span> + <span class="kbd">V</span>), és indítsd el.</li>
+  </ol>
+  <h3>Blokkos csapat (SPIKE App)</h3>
+  <p>A blokkokat nem lehet átmásolni: a SPIKE appban ugyanazokat a blokkokat ugyanígy kell összerakni. Ezért a blokkos szerkesztőnk pontosan a SPIKE app blokkjait használja, ugyanazokkal a feliratokkal.</p>
+  <div class="note"><b>Ellenőrizd mindig</b>A program elején a <code>wheel_diameter</code> és az <code>axle_track</code> (Python), illetve a „set 1 motor rotation to … cm” (blokk) értéke egyezzen a valódi robottal. A bal motor az <b>A</b>, a jobb a <b>B</b> kapuban legyen.</div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="szotar">
+  <h2>Szótár, játékok, WRO</h2>
+  <h3>Szótár</h3>
+  <div class="side">
+    <figure><img src="assets/sugo/szotar.jpg" alt="A Szótár oldal jelölésekkel" loading="lazy"></figure>
+    <div>
+      <ol class="legend">
+        <li><span><b>Keresés.</b> Írd be, mit keresel (pl. „fordul”, „várj”, „szín”).</span></li>
+        <li><span><b>Blokk / Mindkettő / Python.</b> Csak az egyiket mutassa, vagy mindkettőt egymás mellett.</span></li>
+        <li><span><b>Témák.</b> Kattints egy témára, és csak azok a parancsok maradnak.</span></li>
+        <li><span><b>Egy parancs kártyája:</b> blokk és Python, rövid magyarázat, egy sárga „Vigyázz!” a gyakori hibáról, és hogy melyik küldetésben tanultuk. A <b>Kipróbálom</b> gomb megnyitja a pályán.</span></li>
+      </ol>
+    </div>
+  </div>
+  <h3>Játékok</h3>
+  <div class="side">
+    <figure><img src="assets/sugo/jatekok.jpg" alt="A Játékok oldal" loading="lazy"></figure>
+    <div>
+      <ul>
+        <li><b>Légy te a robot!</b> Elolvasod a programot, és megmondod, hová ér a robot.</li>
+        <li><b>Fok-tippelő:</b> mennyit kell fordulni? Blokkban kerékfokban, Pythonban robotfokban.</li>
+        <li><b>Hibavadász:</b> melyik sorban bújik a hiba?</li>
+        <li><b>Rakd sorba!</b> Összekevert programsorok helyes sorrendje.</li>
+      </ul>
+      <p>A játékok gép nélkül is jók: ugyanazt gyakorolják, amit a robottal csinálunk.</p>
+    </div>
+  </div>
+  <h3>WRO</h3>
+  <p>A <a href="wro.html">WRO oldalon</a> megtalálod, mi a World Robot Olympiad, hogyan zajlik egy verseny, mik a legfontosabb szabályok, és hogyan gyakorolhatsz otthon a házi WRO-pályán (a pályaválasztóban: „Házi WRO: Ébred a farm”).</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="gyik">
+  <h2>Gyakori kérdések</h2>
+  <details class="faq"><summary>Nem indul a program, szürke az Indulj! gomb.</summary>
+    <p>Az első megnyitáskor a böngésző letölti a Pythont, ez lassabb neten fél percig is eltarthat. Várj egy kicsit. Ha nagyon sokáig nem jön, frissítsd az oldalt (<span class="kbd">F5</span>).</p></details>
+  <details class="faq"><summary>Eltűnt a programom!</summary>
+    <p>Ha mintát töltöttél be, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza. Belépéssel a program a tárhelyre is mentődik minden futtatáskor. Belépés nélkül csak abban a böngészőben van meg, ahol írtad.</p></details>
+  <details class="faq"><summary>A robot a szimulátorban célba ér, a valóságban nem.</summary>
+    <p>Nézd végig ezt a listát, sorban:</p>
+    <ol class="steps">
+      <li><b>Ugyanonnan indult?</b> Mérd ki újra a rajtot: hátulja 10 cm, bal oldala 10 cm, egyenesen. A legtöbb hiba itt van.</li>
+      <li><b>Ugyanaz a program?</b> Pont azt töltötted fel, amit a szimulátorban futtattál?</li>
+      <li><b>Mindig ugyanarra megy mellé?</b> Akkor a robot beállítása tér el: ha a fordulások rosszak, a tengelytáv (B); ha a távolságok, a kerék átmérője (A).</li>
+      <li><b>Mindig máshova megy?</b> Akkor a letevés, a csúszás vagy a túl nagy sebesség az oka. Lassíts, és tedd le pontosabban.</li>
+      <li><b>Az első szakasz jó, a második után eltéved?</b> Szinte mindig az a baj, hogy a második szakaszt nem onnan számoltuk, ahol a robot az első után áll, hanem a rajttól. Használd az <a href="#eszkozok">útvonaltervezőt</a>, az ezt jól csinálja.</li>
+      <li><b>Jó irányba fordult?</b> Pythonban a pozitív szög jobbra, a negatív balra fordít. Blokkban a „right” jobbra.</li>
+    </ol></details>
+  <details class="faq"><summary>Miért fordul a blokkos robot csak feleannyit?</summary>
+    <p>Mert a blokkos „degrees” a kerék fordulását jelenti, nem a robotét. 90°-os robotforduláshoz kb. 180 kerékfok kell. Pythonban a <code>robot.turn(90)</code> viszont tényleg 90°-ot fordít.</p></details>
+  <details class="faq"><summary>Mit jelent a „robot eleje” vagy a „mutató”?</summary>
+    <p>A piros pöcök a robot előtt. A célokhoz mindig ezt visszük, és a műszerfal x, y értéke is ennek a helyét mutatja. A robot közepe (a két kerék között) ennél hátrébb van, ezért fordul el a robot eleje fordulás közben.</p></details>
+  <details class="faq"><summary>Hogyan kapok jelvényt?</summary>
+    <p>A küldetés oldalán, a mini kihívás mellett nyomd meg a <b>Teljesítettem!</b> gombot. A gyakorló feladatokért nem jár jelvény, de pipát kapnak a listában.</p></details>
+  <details class="faq"><summary>Nem látok egy küldetést, csak kérdőjelet.</summary>
+    <p>Az még titkos: a tanárod nyitja meg, amikor sorra kerül.</p></details>
+  <details class="faq"><summary>Telefonon is működik?</summary>
+    <p>Megnyílik, de a programozáshoz kicsi a képernyő. Számítógépen vagy tableten, billentyűzettel a legkényelmesebb.</p></details>
+  <p class="top"><a href="#">↑ Vissza a tetejére</a></p>
+</section>
+
+</main>
+<footer id="siteFooter"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/cloud.js"></script>
+<script src="assets/common.js"></script>
+<script>window.Kodfejto.header('help');</script>
+</body>
+</html>

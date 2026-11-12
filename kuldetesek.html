@@ -47,8 +47,18 @@
   .challenge .txt { flex: 1 1 420px; font-size: 18px; }
   .challenge h2 { font-size: 26px; margin-bottom: 4px; }
   .switch { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 700; color: var(--muted); }
+  .practice { margin-top: 20px; }
+  .practice h2 { font-size: 28px; margin-bottom: 4px; }
+  .practice > p { margin: 0 0 14px; font-size: 16.5px; }
+  .plist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .pitem { display: flex; gap: 12px; align-items: flex-start; text-decoration: none; color: var(--ink); background: #F3EFFF; border-radius: 14px; padding: 10px 14px; }
+  .pitem:hover { background: #E6DEFF; }
+  .pitem .pnum { flex: none; width: 34px; height: 34px; border-radius: 50%; background: #8A5CF6; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .pitem.done .pnum { background: #2BB673; }
+  .pitem small { color: var(--muted); font-size: 14px; }
+  .pitem .stars { color: #E3A008; }
   .done-note { font-weight: 800; color: var(--green-d); }
-  @media (max-width: 900px) { .mission-list, .rules, .codewrap, .warmup .wgrid { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; } }
+  @media (max-width: 900px) { .plist, .mission-list, .rules, .codewrap, .warmup .wgrid { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; } }
 </style>
 </head>
 <body>
@@ -59,6 +69,7 @@
 <script src="assets/cloud.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/lessons.js"></script>
+<script src="assets/practice.js"></script>
 <script>
 (function () {
   'use strict';
@@ -83,7 +94,19 @@
         <div class="card mcard" style="opacity:.75">
           <span class="mnum" style="background:#B5C9E6">?</span>
           <span><h2>Titkos küldetés</h2><p><span class="stamp">SZIGORÚAN TITKOS</span> &nbsp;Majd a tanárod nyitja meg, ha eljön az ideje.</p></span>
-        </div>`).join('')}</div>`;
+        </div>`).join('')}</div>` + practiceList();
+  }
+
+  // Gyakorló feladatok az alapmozgásokhoz: a pályán nyílnak meg, kiválasztva.
+  function practiceList() {
+    const P = window.KodfejtoPractice; if (!P) return '';
+    let done = []; try { done = JSON.parse(localStorage.getItem('kodfejto.practiceDone') || '[]'); } catch (e) { /* nem baj */ }
+    const mode = groupMode();
+    return `<div class="card practice"><h2>Gyakorló feladatok: alapmozgások</h2>
+      <p>Egyenesen menni, fordulni, célba érni, hazajönni. Mindegyik a <b>10,10-es rajtról</b> indul a Pálya1-en (a robot hátulja 10 cm-re az alsó, a bal oldala 10 cm-re a bal széltől).
+      A célt akkor éred el, ha a robot <b>eleje</b> (a piros mutató) a célon <b>áll meg</b>. A ★ a nehézséget jelzi.</p>
+      <div class="plist">${P.TASKS.map((t, i) => `<a class="pitem${done.includes(t.id) ? ' done' : ''}" href="palya/index.html#${t.id}-${mode}">
+        <span class="pnum">${done.includes(t.id) ? '✓' : i + 1}</span><span><b>${t.title}</b> <span class="stars">${'★'.repeat(t.stars)}</span><br><small>${t.text}</small></span></a>`).join('')}</div></div>`;
   }
 
   function codeBlock(v, mode) {
