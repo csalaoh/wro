@@ -56,12 +56,18 @@
     k12: { type: 'point', x: 810, y: 780, r: 20, label: 'a piros cél közepe' },
   };
 
-  const DEFAULT_START = {
-    palya1: { x: 120, y: 120, heading: 0 },
-    palya2: { x: 495, y: 110, heading: 0 },
+  // Alaprajt: a robot hátulja 10 cm-re a pálya alsó szélétől, a bal oldala 10 cm-re a bal széltől,
+  // felfelé néz („10,10”). A robot közepét a beállított méretekből számoljuk.
+  // A rajzlapon és a házi WRO-n saját rajt van (a WRO-n a rajtmezőben kell állni).
+  const FIXED_START = {
     rajzlap: { x: 275, y: 180, heading: 0 },
-    edzo: { x: 150, y: 150, heading: 0 },
+    wro: { x: 119, y: 120, heading: 0 },
   };
+  function defaultStart(key) {
+    if (FIXED_START[key]) return Object.assign({}, FIXED_START[key]);
+    const d = dims();
+    return { x: 100 + d.width / 2, y: 100 + d.rear, heading: 0 };
+  }
 
   // ------------------------------------------------------------ tárolás
   const store = {
@@ -105,21 +111,34 @@
     location.replace('../belepes.html?vissza=' + encodeURIComponent('palya/index.html' + location.hash));
     return;
   }
-  if (cloudOn) Cloud.flush().catch(() => {});
+  if (cloudOn && Cloud.session()) Cloud.pull(false).catch(() => {}); else if (cloudOn) Cloud.flush().catch(() => {});  // mentés + a legutóbb mentett program letöltése
 
   // ------------------------------------------------------------ állapot
   const state = {
     mat: store.get('mat', 'palya1'),
-    starts: Object.assign({}, DEFAULT_START, store.get('starts', {})),
+    starts: store.get('starts', {}),
     pyodide: null, shim: null,
     images: {}, pixels: {},
     result: null, ghost: null,
     play: null, pose: null,
-    tape: [], tapeFromRobot: false, ang: null, aim: null, dragging: false,
+    tape: [], tapeFromRobot: false, ang: null, aim: null, route: [], practiceRes: null, dragging: false,
     audio: null,
     wro: null, // házi WRO küldetés állapota (ha be van kapcsolva)
     mode: store.get('mode', store.get('group', '') === 'blokk3' ? 'blocks' : 'python'), ws: null, lastBlock: null,
   };
+
+  // Melyik rajthoz tartozunk: a házi WRO-nak saját rajtja van (a Pálya1-en, de a rajtmezőben).
+  function startKey() { return state.wro ? 'wro' : state.mat; }
+  function curStart() {
+    const k = startKey();
+    if (!state.starts[k]) state.starts[k] = defaultStart(k);
+    return state.starts[k];
+  }
+  // Egyszeri átállás a 10,10-es alaprajtra (a régi, máshol álló rajtokat elfelejtjük).
+  if (store.get('startVer', 0) < 2) {
+    ['palya1', 'palya2', 'edzo'].forEach((k) => { delete state.starts[k]; });
+    store.set('startVer', 2); store.set('starts', state.starts);
+  }
 
   // ------------------------------------------------------------ szerkesztő
   const ta = $('code'), hl = $('hl'), gutter = $('gutter');
@@ -177,6 +196,51 @@
     if (m) store.set('teacher', m[2] !== '0');
   })();
   const isTeacher = () => store.get('teacher', false);
+
+  // ------------------------------------------------------------ alapprogram és a robot méretei
+  // Megnyitáskor a szerkesztőben csak az alap van: importok, hub, motorok, DriveBase
+  // (blokkban: motorpár, 1 fordulat hossza, sebesség). A számokat a Robot méretei adják.
+  const rotCm = () => Math.round(Math.PI * dims().wheel) / 10;   // 1 kerékfordulat cm-ben
+  function baseCode() {
+    const d = dims();
+    return 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\n'
+      + 'hub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\n'
+      + `robot = DriveBase(bal, jobb, wheel_diameter=${d.wheel}, axle_track=${d.axle})\n\n# Ide írd a programot:\n`;
+  }
+  function baseBlocks() {
+    const B = (type, fields, inputs) => Object.assign({ type }, fields ? { fields } : {}, inputs ? { inputs } : {});
+    const n = (x) => ({ shadow: { type: 'math_number', fields: { NUM: x } } });
+    const list = [B('spike_set_pair', { PAIR: 'A,B' }), B('spike_set_rotation', { UNIT: 'cm' }, { N: n(rotCm()) }), B('spike_set_speed', null, { N: n(50) })];
+    for (let i = list.length - 2; i >= 0; i--) list[i].next = { block: list[i + 1] };
+    const start = B('spike_start'); start.x = 30; start.y = 30; start.next = { block: list[0] };
+    return { blocks: { languageVersion: 0, blocks: [start] } };
+  }
+  // A program kerékméretét és tengelytávját a robot beállításaihoz igazítjuk.
+  function applyDims(code) {
+    const d = dims();
+    return code.replace(/(wheel_diameter\s*=\s*)[\d.]+/g, '$1' + d.wheel).replace(/(axle_track\s*=\s*)[\d.]+/g, '$1' + d.axle);
+  }
+  function applyDimsWs(json) {
+    const j = JSON.parse(JSON.stringify(json)), v = rotCm();
+    const walk = (b) => {
+      if (!b || typeof b !== 'object') return;
+      if (b.type === 'spike_set_rotation' && b.fields && b.fields.UNIT === 'cm' && b.inputs && b.inputs.N) {
+        const sh = b.inputs.N.shadow || b.inputs.N.block;
+        if (sh && sh.fields) sh.fields.NUM = v;
+      }
+      Object.values(b).forEach((x) => { if (x && typeof x === 'object') walk(x); });
+    };
+    walk(j);
+    return j;
+  }
+  // A megnyitás előtti program: a minták menüjéből visszahozható.
+  const LAST = { code: store.get('code', null), blocks: store.get('blocks', null) };
+  if (LAST.code && LAST.code.trim() && !/^[\s\S]*# Ide írd a programot:\s*$/.test(LAST.code)) store.set('lastCode', LAST.code);
+  if (LAST.blocks) {
+    const nb = ((LAST.blocks.blocks || {}).blocks || []).length, first = ((LAST.blocks.blocks || {}).blocks || [])[0];
+    let len = 0, b = first && first.next && first.next.block; while (b) { len++; b = b.next && b.next.block; }
+    if (nb > 1 || len > 3) store.set('lastBlocks', LAST.blocks);
+  }
   function fillSamples() {
     const sel = $('sampleSel');
     const list = state.mode === 'blocks'
@@ -184,24 +248,33 @@
       : Object.entries(PY_SAMPLE_LABELS).filter(([k]) => !TEACHER_SAMPLES.has(k) || isTeacher());
     sel.innerHTML = '';
     const first = document.createElement('option'); first.value = ''; first.textContent = 'Minta betöltése…'; sel.appendChild(first);
+    const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    opt('__base', '▢ Üres program (csak az alap)');
+    const bl = state.mode === 'blocks', last = store.get(bl ? 'lastBlocks' : 'lastCode', null), cl = store.get(bl ? 'cloudBlocks' : 'cloudCode', null);
+    if (last) opt('__last', '↩ A legutóbbi programom ezen a gépen');
+    if (cl && JSON.stringify(cl) !== JSON.stringify(last)) opt('__cloud', '☁ A legutóbb mentett programom');
     list.forEach(([k, label]) => { const o = document.createElement('option'); o.value = k; o.textContent = label; sel.appendChild(o); });
   }
+  window.addEventListener('kodfejto-pulled', () => fillSamples());
   $('sampleSel').addEventListener('change', (e) => {
     const k = e.target.value;
     if (!k) return;
     if (state.mode === 'blocks') {
+      const ws = k === '__base' ? baseBlocks() : k === '__last' ? store.get('lastBlocks', null) : k === '__cloud' ? store.get('cloudBlocks', null) : applyDimsWs(window.KodfejtoBlocks.SAMPLES[k].ws);
+      if (!ws) { e.target.value = ''; return; }
       if (state.ws.getAllBlocks(false).length) log('A minta lecserélte a blokkokat. A Ctrl+Z visszahozza a régieket.', 'c-muted');
       Blockly.Events.setGroup(true);
       state.ws.clear();
-      Blockly.serialization.workspaces.load(window.KodfejtoBlocks.SAMPLES[k].ws, state.ws);
+      Blockly.serialization.workspaces.load(ws, state.ws);
       Blockly.Events.setGroup(false);
     } else {
+      const src = k === '__base' ? baseCode() : k === '__last' ? store.get('lastCode', '') : k === '__cloud' ? store.get('cloudCode', '') : applyDims(SAMPLES[k]);
       // A mintát "beírjuk", így Ctrl+Z-vel visszahozható a korábbi program.
       if (ta.value.trim()) log('A minta lecserélte a programodat. A Ctrl+Z visszahozza a régit.', 'c-muted');
       ta.focus();
       ta.select();
-      document.execCommand && document.execCommand('insertText', false, SAMPLES[k]);
-      if (ta.value !== SAMPLES[k]) ta.value = SAMPLES[k];
+      document.execCommand && document.execCommand('insertText', false, src);
+      if (ta.value !== src) ta.value = src;
       errLine = 0; refreshEditor(); store.set('code', ta.value);
     }
     e.target.value = '';
@@ -225,12 +298,9 @@
       move: { scrollbars: true, drag: true, wheel: false },
       theme: Blockly.Theme.defineTheme('kodfejto', { base: Blockly.Themes.Zelos, blockStyles: { procedure_blocks: { colourPrimary: '#FF6680', colourSecondary: '#FF8FA3', colourTertiary: '#D94B66' } }, fontStyle: { family: 'Nunito, sans-serif', weight: '700', size: 12 } }),
     });
-    const saved = store.get('blocks', null);
-    try {
-      Blockly.serialization.workspaces.load(saved || window.KodfejtoBlocks.SAMPLES.fwd.ws, state.ws);
-    } catch (e) {
-      Blockly.serialization.workspaces.load(window.KodfejtoBlocks.SAMPLES.fwd.ws, state.ws);
-    }
+    // megnyitáskor mindig az alapprogram (a régi a Minták menüből visszahozható)
+    Blockly.serialization.workspaces.load(baseBlocks(), state.ws);
+    store.set('blocks', Blockly.serialization.workspaces.save(state.ws));
     state.ws.addChangeListener((ev) => {
       if (ev.isUiEvent) return;
       store.set('blocks', Blockly.serialization.workspaces.save(state.ws));
@@ -244,6 +314,7 @@
     $('blocklyDiv').hidden = mode !== 'blocks';
     if (mode === 'blocks') { ensureBlockly(); Blockly.svgResize(state.ws); }
     fillSamples();
+    updateRouteBox();
   }
   $('tabPy').addEventListener('click', () => { stopPlayback(false); setMode('python'); });
   $('tabBlk').addEventListener('click', () => { stopPlayback(false); setMode('blocks'); });
@@ -431,7 +502,7 @@
 
   // A robot eleje (a mutató vége) a mostani helyzetben
   function robotTip() {
-    const p = state.pose || state.starts[state.mat];
+    const p = state.pose || curStart();
     const P = ROBOT().pointer, h = p.heading * Math.PI / 180;
     return [p.x + Math.sin(h) * P, p.y + Math.cos(h) * P];
   }
@@ -439,7 +510,7 @@
   // fordulás közben az eleje elmozdul, így a lemért távolság nem lesz jó.
   function tapeWarning() {
     if (!state.tapeFromRobot || state.tape.length < 2) return null;
-    const p = state.pose || state.starts[state.mat];
+    const p = state.pose || curStart();
     const tgt = state.tape[1];
     const off = norm180(bearing([p.x, p.y], tgt) - p.heading);
     const d = Math.hypot(tgt[0] - state.tape[0][0], tgt[1] - state.tape[0][1]);
@@ -618,6 +689,256 @@
     log((ok ? '🎯 Cél teljesítve! ' : '🎯 Még nem sikerült: ') + txt + '. (Cél: ' + t.label + '.)', ok ? 'c-ok' : 'c-hint');
   }
 
+  // ------------------------------------------------------------ gyakorló feladatok (Pálya1)
+  // A célokat sorban kell elérni. Egy cél akkor teljesül, ha a robot eleje (a mutató)
+  // a célon belül ÁLL MEG: közben a robot alig mozog és alig fordul. Az átsuhanás nem számít.
+  const PR = window.KodfejtoPractice || { SPOTS: {}, TASKS: [] };
+  function practice() {
+    if (state.mat !== 'palya1' || state.wro) return null;
+    const id = store.get('practice', '');
+    return PR.TASKS.find((t) => t.id === id) || null;
+  }
+  function practiceTargets(task) {
+    const st = curStart(), P = ROBOT().pointer, h = st.heading * Math.PI / 180;
+    return task.route.map((k) => {
+      if (k === 'haza') return { home: true, name: 'vissza a rajtra' };
+      if (k === 'elore500') return { x: st.x + Math.sin(h) * (P + 500), y: st.y + Math.cos(h) * (P + 500), r: 20, name: '50 cm-rel a rajt előtt' };
+      return Object.assign({}, PR.SPOTS[k]);
+    });
+  }
+  function drawPractice() {
+    const task = practice(); if (!task) return;
+    const s = scale(), T = practiceTargets(task), res = state.practiceRes;
+    ctx.save();
+    T.forEach((t, i) => {
+      const col = res && res.task === task.id ? (res.ok[i] ? '#2BB673' : '#C9393E') : '#8A5CF6';
+      let px, py;
+      if (t.home) {
+        const c = rearLeft(curStart()); [px, py] = toPx(c[0] - 18, c[1] - 18);
+      } else {
+        [px, py] = toPx(t.x, t.y);
+        ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(px, py, t.r * s, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+        px += t.r * s + 12; py -= t.r * s + 4;
+      }
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = '800 13px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(t.home ? '⌂' : String(i + 1), px, py + 1);
+    });
+    ctx.restore();
+  }
+  function stillFrames(frames) {
+    // azok a pillanatok, amikor a robot (majdnem) áll: < 40 mm/s és < 40 °/s
+    const out = [];
+    for (let i = 1; i < frames.length; i++) {
+      const a = frames[i - 1], b = frames[i], dt = Math.max(1, b.t - a.t) / 1000;
+      const v = Math.hypot(b.x - a.x, b.y - a.y) / dt, w = Math.abs(norm180(b.h - a.h)) / dt;
+      if (v < 40 && w < 40) out.push(i);
+    }
+    if (frames.length) out.push(frames.length - 1);
+    return out;
+  }
+  function checkPractice(res) {
+    const task = practice(); if (!task || !res.frames || !res.frames.length) return;
+    const T = practiceTargets(task), P = ROBOT().pointer, fr = res.frames, still = stillFrames(fr);
+    const tip = (f) => { const h = f.h * Math.PI / 180; return [f.x + Math.sin(h) * P, f.y + Math.cos(h) * P]; };
+    let from = 0; const ok = [], parts = [];
+    T.forEach((t, i) => {
+      if (t.home) {
+        const f = fr[fr.length - 1], st = curStart(), c0 = rearLeft(st), c1 = rearLeft({ x: f.x, y: f.y, heading: f.h });
+        const d = Math.hypot(c1[0] - c0[0], c1[1] - c0[1]), e = Math.abs(norm180(f.h - st.heading));
+        const good = d <= 20 && e <= 5 && ok.every(Boolean);
+        ok.push(good);
+        parts.push(`${good ? '✔' : '✘'} ${i + 1}. haza: ${fmt(d / 10, 1)} cm-re és ${fmt(e, 1)}°-kal állt meg a rajttól` + (good ? '' : ' (2 cm és 5° fér bele)'));
+        return;
+      }
+      let hit = -1, best = Infinity;
+      for (const k of still) {
+        if (k < from) continue;
+        const q = tip(fr[k]), d = Math.hypot(q[0] - t.x, q[1] - t.y);
+        if (d <= t.r) { hit = k; best = d; break; }
+        if (d < best) best = d;
+      }
+      ok.push(hit >= 0);
+      if (hit >= 0) { from = hit; parts.push(`✔ ${i + 1}. ${t.name}: a mutató ${fmt(best / 10, 1)} cm-re állt meg a közepétől`); }
+      else parts.push(`✘ ${i + 1}. ${t.name}: ` + (isFinite(best) ? `a legközelebb ${fmt(best / 10, 1)} cm-re álltál meg tőle (legfeljebb ${fmt(t.r / 10, 1)} cm lehet)` : 'ide már nem jutottál el'));
+    });
+    state.practiceRes = { task: task.id, ok };
+    const all = ok.every(Boolean);
+    log('🎯 ' + task.title + ':\n   ' + parts.join('\n   '), all ? 'c-ok' : 'c-hint');
+    if (all) {
+      const done = store.get('practiceDone', []);
+      if (!done.includes(task.id)) { done.push(task.id); store.set('practiceDone', done); fillPracticeSel(); }
+      log('🏅 Megvan! ' + ($('optReal').checked ? 'Valóság módban is!' : 'Most kapcsold be a Valóság módot, és próbáld meg úgy is!'), 'c-ok');
+    }
+  }
+  function fillPracticeSel() {
+    const sel = $('practiceSel'); if (!sel) return;
+    const done = store.get('practiceDone', []), cur = store.get('practice', '');
+    sel.innerHTML = '<option value="">– nincs kiválasztva –</option>' + PR.TASKS.map((t) =>
+      `<option value="${t.id}"${t.id === cur ? ' selected' : ''}>${done.includes(t.id) ? '✔ ' : ''}${t.title} ${'★'.repeat(t.stars)}</option>`).join('');
+    showPracticeText();
+  }
+  function showPracticeText() {
+    const task = PR.TASKS.find((t) => t.id === store.get('practice', ''));
+    $('practiceText').innerHTML = task ? task.text + (state.mat !== 'palya1' || state.wro ? ' <b>(Ez a Pálya1-en van.)</b>' : '') : 'Válassz egy feladatot! A célok a pályán megszámozva látszanak, a futás után pedig megmondjuk, melyiket érted el.';
+    $('practiceTip').hidden = !task;
+    $('practiceTipTxt').textContent = task ? task.tip : '';
+  }
+  function selectPractice(id) {
+    store.set('practice', id);
+    state.practiceRes = null;
+    if (id) {
+      store.set('slot', id);  // a program ehhez a feladathoz mentődik
+      if (state.mat !== 'palya1' || state.wro) {
+        setWro(false); state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = 'palya1'; updateMatUi(); fitCanvas();
+      }
+      stopPlayback(false);
+      state.starts.palya1 = defaultStart('palya1'); store.set('starts', state.starts);
+      state.pose = null; state.result = null; state.ghost = null;
+      const t = PR.TASKS.find((q) => q.id === id);
+      log('🎯 Gyakorló feladat: ' + t.title + '. A robot a 10,10-es rajton áll.', 'c-hint');
+    }
+    fillPracticeSel(); render();
+  }
+  if ($('practiceSel')) $('practiceSel').addEventListener('change', (e) => selectPractice(e.target.value));
+
+  // ------------------------------------------------------------ útvonaltervező
+  // Kattints sorban a célokra: a tervező MINDIG a rajttól számol, szakaszról szakaszra,
+  // onnan, ahol a robot az előző szakasz végén áll. A számokat úgy kerekítjük, ahogy
+  // a programba kerülnek, és a következő szakaszt már a kerekített értékből számoljuk.
+  function routePlan() {
+    const st = curStart(), R = ROBOT(), P = R.pointer, blocks = state.mode === 'blocks';
+    const qTurn = (t) => blocks ? Math.round(t * R.axleTrack / R.wheelDiameter) * R.wheelDiameter / R.axleTrack : Math.round(t * 10) / 10;
+    const qLen = (d) => blocks ? Math.round(d) : Math.round(d);   // mm (blokknál 1 tizedes cm = 1 mm)
+    let c = [st.x, st.y], hd = st.heading;
+    const legs = [];
+    const go = (turn, len, extra) => {
+      hd += turn; const h = hd * Math.PI / 180;
+      c = [c[0] + Math.sin(h) * len, c[1] + Math.cos(h) * len];
+      legs.push(Object.assign({ turn, len, c: c.slice(), heading: hd, tip: [c[0] + Math.sin(h) * P, c[1] + Math.cos(h) * P] }, extra));
+    };
+    state.route.forEach((pt, i) => {
+      if (pt.home) {
+        const d = Math.hypot(st.x - c[0], st.y - c[1]);
+        if (d >= 1) {
+          let b = bearing(c, [st.x, st.y]);
+          if (pt.back) b += 180;
+          const turn = qTurn(norm180(b - hd)), h = (hd + turn) * Math.PI / 180;
+          const along = (st.x - c[0]) * Math.sin(h) + (st.y - c[1]) * Math.cos(h);
+          go(turn, qLen(along), { home: 1, n: i + 1 });
+        }
+        go(qTurn(norm180(st.heading - hd)), 0, { home: 2, n: i + 1 });
+        return;
+      }
+      const turn = qTurn(norm180(bearing(c, pt) - hd)), h = (hd + turn) * Math.PI / 180;
+      const along = (pt[0] - c[0]) * Math.sin(h) + (pt[1] - c[1]) * Math.cos(h);
+      go(turn, qLen(along - P), { target: pt, n: i + 1 });
+    });
+    return legs;
+  }
+  function legText(l, blocks) {
+    const R = ROBOT(), out = [];
+    if (Math.abs(l.turn) >= 0.05) {
+      out.push(blocks
+        ? `fordulj ${l.turn > 0 ? 'jobbra' : 'balra'} ${Math.round(Math.abs(l.turn) * R.axleTrack / R.wheelDiameter)} kerékfokot (${fmt(Math.abs(l.turn), 1)}°)`
+        : `fordulj ${fmt(Math.abs(l.turn), 1)}°-ot ${l.turn > 0 ? 'jobbra' : 'balra'}`);
+    }
+    if (l.len) out.push(l.len > 0 ? `menj előre ${fmt(l.len / 10, 1)} cm-t` : `tolass ${fmt(-l.len / 10, 1)} cm-t`);
+    return out.join(', ') || 'nem kell mozdulni';
+  }
+  function updateRouteBox() {
+    const box = $('routeBox'); if (!box) return;
+    const on = $('toolSel').value === 'route';
+    box.hidden = !on;
+    if (!on) return;
+    const legs = routePlan(), blocks = state.mode === 'blocks';
+    const hasHome = state.route.some((p) => p.home);
+    box.querySelector('ol').innerHTML = legs.length
+      ? legs.map((l) => `<li><b>${l.home === 2 ? 'Beállás felfelé' : l.home ? 'Haza' : l.n + '. cél'}:</b> ${legText(l, blocks)}</li>`).join('')
+      : '<li class="empty">Még nincs cél. Kattints a pályán!</li>';
+    $('routeUndo').disabled = !state.route.length;
+    $('routeClear').disabled = !state.route.length;
+    $('routeHome').disabled = hasHome || !state.route.length;
+    $('routeInsert').disabled = !legs.length;
+  }
+  function routeCode(legs) {
+    const d = dims(), R = ROBOT(), g = startGeometry();
+    const where = g.axis >= 0 ? `a hátulja ${fmt(g.rear[1] / 10, 1)} cm-re a(z) ${g.rear[0]}, a bal oldala ${fmt(g.left[1] / 10, 1)} cm-re a(z) ${g.left[0]} széltől` : 'ferde rajt';
+    if (state.mode === 'blocks') {
+      const B = (type, fields, inputs) => Object.assign({ type }, fields ? { fields } : {}, inputs ? { inputs } : {});
+      const n = (x) => ({ shadow: { type: 'math_number', fields: { NUM: x } } });
+      const list = [
+        B('spike_set_pair', { PAIR: 'A,B' }),
+        B('spike_set_rotation', { UNIT: 'cm' }, { N: n(rotCm()) }),
+        B('spike_set_speed', null, { N: n(50) }),
+      ];
+      legs.forEach((l) => {
+        const wd = Math.round(Math.abs(l.turn) * R.axleTrack / R.wheelDiameter);
+        if (wd) list.push(B('spike_steer_for', { SIDE: l.turn > 0 ? 'right' : 'left', UNIT: 'degrees' }, { S: n(100), N: n(wd) }));
+        if (l.len) list.push(B('spike_move_for', { DIR: l.len > 0 ? 'fwd' : 'back', UNIT: 'cm' }, { N: n(Math.abs(l.len) / 10) }));
+      });
+      for (let i = list.length - 2; i >= 0; i--) list[i].next = { block: list[i + 1] };
+      const start = B('spike_start', null, null); start.x = 30; start.y = 30; start.next = { block: list[0] };
+      return { blocks: { languageVersion: 0, blocks: [start] } };
+    }
+    let py = baseCode().replace('# Ide írd a programot:\n', '')
+      + `# Útvonal a tervezőből. Rajt: ${where}, irány ${Math.round(curStart().heading)}°.\n`;
+    legs.forEach((l) => {
+      py += `\n# ${l.home === 2 ? 'beállás a rajtirányba' : l.home ? 'vissza a rajtra' : l.n + '. cél'}\n`;
+      if (Math.abs(l.turn) >= 0.05) py += `robot.turn(${String(Math.round(l.turn * 10) / 10)})\n`;
+      if (l.len) py += `robot.straight(${l.len})\n`;
+    });
+    return py;
+  }
+  function insertRoute() {
+    const legs = routePlan(); if (!legs.length) return;
+    const code = routeCode(legs);
+    if (state.mode === 'blocks') {
+      const count = state.ws.getAllBlocks(false).length;
+      if (count > 1 && !window.confirm('Lecseréljem a mostani blokkokat az útvonalra?')) return;
+      state.ws.clear();
+      Blockly.serialization.workspaces.load(code, state.ws);
+    } else {
+      if (/robot\.\w+\(/.test(ta.value) && !window.confirm('Lecseréljem a mostani programot az útvonalra?')) return;
+      ta.value = code; errLine = 0; refreshEditor(); store.set('code', ta.value);
+    }
+    log('🧭 Beírtam az útvonalat a programba (' + legs.length + ' szakasz). Nyomd meg az Indulj! gombot!', 'c-hint');
+  }
+  function drawRoute() {
+    if ($('toolSel').value !== 'route' || !state.route.length) return;
+    const legs = routePlan(), st = curStart(), s = scale();
+    ctx.save();
+    ctx.strokeStyle = '#0E9F6E'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]);
+    ctx.beginPath(); let [x0, y0] = toPx(st.x, st.y); ctx.moveTo(x0, y0);
+    legs.forEach((l) => { const [x, y] = toPx(l.c[0], l.c[1]); ctx.lineTo(x, y); });
+    ctx.stroke(); ctx.setLineDash([]);
+    legs.forEach((l, i) => {
+      if (l.home === 1) return;
+      const last = i === legs.length - 1 || legs[i + 1].home === 2 && i + 1 === legs.length - 1;
+      drawRobot({ x: l.c[0], y: l.c[1], heading: l.heading }, last ? 0.45 : 0.2);
+    });
+    ctx.lineWidth = 2.5;
+    state.route.forEach((pt, i) => {
+      if (pt.home) return;
+      const [px, py] = toPx(pt[0], pt[1]);
+      ctx.strokeStyle = '#0E9F6E'; ctx.beginPath(); ctx.moveTo(px - 9, py); ctx.lineTo(px + 9, py); ctx.moveTo(px, py - 9); ctx.lineTo(px, py + 9); ctx.stroke();
+      ctx.fillStyle = '#0E9F6E'; ctx.beginPath(); ctx.arc(px + 14, py - 14, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = '800 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(i + 1), px + 14, py - 13);
+    });
+    ctx.restore();
+  }
+  (function routeButtons() {
+    if (!$('routeBox')) return;
+    $('routeUndo').addEventListener('click', () => { state.route.pop(); updateRouteBox(); render(); });
+    $('routeClear').addEventListener('click', () => { state.route = []; updateRouteBox(); render(); });
+    $('routeHome').addEventListener('click', () => { state.route.push({ home: true, back: $('routeBack').checked }); updateRouteBox(); render(); });
+    $('routeBack').addEventListener('change', () => { state.route.forEach((p) => { if (p.home) p.back = $('routeBack').checked; }); updateRouteBox(); render(); });
+    $('routeInsert').addEventListener('click', insertRoute);
+  })();
+
   function render() {
     if (state.aim && $('toolSel').value === 'aim') updateAim();
     // a robot elejéhez kötött mérőszalag együtt mozog a robottal
@@ -633,17 +954,19 @@
     const playT = state.play ? state.play.t : (state.result ? Infinity : -1);
     if (state.mat === 'rajzlap' && $('optTarget').checked) drawTarget();
     drawMissionTarget();
+    drawPractice();
     if ($('optTrail').checked && state.result && state.result.mat === state.mat) {
       if (state.mat === 'rajzlap') drawPath(state.result.frames, playT, '#1D2B44', false, 4); // toll
       else drawPath(state.result.frames, playT, '#2F6FED', false);
     }
-    const pose = state.pose || state.starts[state.mat];
+    const pose = state.pose || curStart();
     drawWro(pose);
     drawRobot(pose, 1);
     if ($('optStart').checked) drawStart();
     drawTape();
     drawProtractor();
     drawAim();
+    drawRoute();
     updateTele(pose, state.play ? state.play.t : null);
     updateStartInfo();
   }
@@ -655,7 +978,7 @@
   // és a bal oldala melletti vonal, a pálya szélétől mért távolságokkal.
   const EDGE = ['alsó', 'bal', 'felső', 'jobb'];
   function startGeometry() {
-    const st = state.starts[state.mat], R = ROBOT(), M = matInfo();
+    const st = curStart(), R = ROBOT(), M = matInfo();
     const q = ((Math.round(st.heading) % 360) + 360) % 360;
     const axis = q % 90 === 0 ? q / 90 : -1;
     const c = rearLeft(st);
@@ -734,7 +1057,7 @@
   const num = (v) => parseFloat(String(v).replace(',', '.').replace(/[^\d.\-]/g, ''));
   function applyStartForm() {
     if (state.play) return;
-    const st = state.starts[state.mat], R = ROBOT(), M = matInfo(), msg = $('sdMsg');
+    const st = curStart(), R = ROBOT(), M = matInfo(), msg = $('sdMsg');
     let h = num($('sdH').value);
     if (!isFinite(h)) { msg.textContent = 'Az irányhoz egy számot írj (0 = felfelé, 90 = jobbra, 180 = lefelé, 270 = balra).'; return; }
     h = ((Math.round(h) % 360) + 360) % 360;
@@ -827,6 +1150,13 @@
       render();
       return;
     }
+    if (tool === 'route') {
+      if (state.route.some((p) => p.home)) { log('🧭 Az útvonal már hazaér. Töröld az utolsó lépést, ha tovább mennél.', 'c-hint'); return; }
+      state.route.push([x, y]);
+      updateRouteBox();
+      render();
+      return;
+    }
     if (tool === 'aim') {
       state.aim = [x, y];
       updateAim();
@@ -844,7 +1174,7 @@
       return;
     }
     if (state.play) return;
-    const st = state.starts[state.mat];
+    const st = curStart();
     if (Math.hypot(x - st.x, y - st.y) < 110) {
       state.dragging = { dx: st.x - x, dy: st.y - y };
       state.pose = null; state.result = null;
@@ -854,14 +1184,14 @@
   canvas.addEventListener('pointermove', (e) => {
     if (!state.dragging) return;
     const [x, y] = eventMm(e);
-    const st = state.starts[state.mat];
+    const st = curStart();
     st.x = x + state.dragging.dx; st.y = y + state.dragging.dy;
     render();
   });
   canvas.addEventListener('pointerup', () => {
     if (!state.dragging) return;
     state.dragging = false;
-    const st = state.starts[state.mat];
+    const st = curStart();
     snapStart(st);
     store.set('starts', state.starts);
     render();
@@ -872,13 +1202,18 @@
     const f = [Math.sin(h), Math.cos(h)], r = [Math.cos(h), -Math.sin(h)];
     return [st.x - r[0] * R.bodyWidth / 2 - f[0] * R.bodyRear, st.y - r[1] * R.bodyWidth / 2 - f[1] * R.bodyRear];
   }
+  function fromRearLeft(c, heading) {
+    const R = ROBOT(), h = heading * Math.PI / 180;
+    const f = [Math.sin(h), Math.cos(h)], r = [Math.cos(h), -Math.sin(h)];
+    return { x: c[0] + r[0] * R.bodyWidth / 2 + f[0] * R.bodyRear, y: c[1] + r[1] * R.bodyWidth / 2 + f[1] * R.bodyRear, heading };
+  }
   function snapStart(st) {
     const c = rearLeft(st), sx = Math.round(c[0] / 5) * 5 - c[0], sy = Math.round(c[1] / 5) * 5 - c[1];
     st.x = Math.round((st.x + sx) * 10) / 10; st.y = Math.round((st.y + sy) * 10) / 10;
   }
   document.querySelectorAll('[data-rot]').forEach((b) => b.addEventListener('click', () => {
     if (state.play) return;
-    const st = state.starts[state.mat];
+    const st = curStart();
     st.heading = (((st.heading + Number(b.dataset.rot)) % 360) + 360) % 360;
     snapStart(st);
     state.pose = null; state.result = null;
@@ -903,6 +1238,9 @@
     } else if (tool === 'aim') {
       h.style.color = '';
       if (!state.aim) h.textContent = 'Kattints oda, ahová a robotnak el kell jutnia. Megmutatja, mennyit forduljon és mennyit menjen.';
+    } else if (tool === 'route') {
+      h.style.color = '';
+      h.textContent = 'Kattints sorban a célokra a pályán! A tervező a rajttól indul, és minden szakaszt onnan számol, ahol a robot az előző végén áll. Ha kész, írd be a programba.';
     } else h.textContent = '';
   }
   // Célzás: a robot mostani helyzetéből mennyit forduljon, és mennyit menjen,
@@ -912,7 +1250,7 @@
   // végétől, a piros jeltől) mérjük, mert az eleje viszi a karokat, fogókat.
   function aimData() {
     if (!state.aim) return null;
-    const p = state.pose || state.starts[state.mat];
+    const p = state.pose || curStart();
     const P = ROBOT().pointer;
     const c = [p.x, p.y];
     const b = bearing(c, state.aim);
@@ -937,11 +1275,11 @@
     else t += ', aztán tolass ' + fmt(-d.travel / 10, 1) + ' cm-t: a cél közelebb van, mint a robot eleje.';
     $('toolHint').textContent = t;
   }
-  $('toolSel').addEventListener('change', () => { state.tape = []; state.tapeFromRobot = false; state.ang = null; state.aim = null; updateToolHint(); render(); });
+  $('toolSel').addEventListener('change', () => { state.tape = []; state.tapeFromRobot = false; state.ang = null; state.aim = null; updateToolHint(); updateRouteBox(); render(); });
   // Szögmérő a robotra: a csúcs a tengely közepe, az első szár a rajtirány,
   // a második a robot mostani iránya. Így látszik, mennyit fordult.
   $('robotAngleBtn').addEventListener('click', () => {
-    const st = state.starts[state.mat];
+    const st = curStart();
     const p = state.pose || st;
     state.ang = { c: [p.x, p.y], b1: st.heading, b2: p.heading, robot: true };
     updateToolHint();
@@ -956,7 +1294,19 @@
     state.pose = null; state.result = null; state.ghost = null; state.tape = []; state.ang = null;
     updateMatUi(); fitCanvas(); render();
   });
-  function updateMatUi() { $('targetRow').hidden = state.mat !== 'rajzlap'; }
+  function updateMatUi() {
+    $('targetRow').hidden = state.mat !== 'rajzlap';
+    $('homeStartBtn').textContent = state.mat === 'rajzlap' || state.wro ? '⌂ Alaprajt' : '⌂ Alaprajt (10,10)';
+    state.practiceRes = null; showPracticeText();
+  }
+  $('homeStartBtn').addEventListener('click', () => {
+    if (state.play) return;
+    const k = startKey();
+    state.starts[k] = defaultStart(k); store.set('starts', state.starts);
+    state.pose = null; state.result = null;
+    render();
+    log(state.mat === 'rajzlap' || state.wro ? '⌂ A robot az alaprajton áll.' : '⌂ A robot a 10,10-es rajton áll: a hátulja 10 cm-re az alsó, a bal oldala 10 cm-re a bal széltől.', 'c-hint');
+  });
 
   // ------------------------------------------------------------ házi WRO: Ébred a farm
   const J = window.KodfejtoJudge;
@@ -1067,7 +1417,7 @@
     resetHub();
     log('▶ Program indul…', 'c-muted');
     $('runBtn').disabled = true;
-    const start = Object.assign({}, state.starts[state.mat]);
+    const start = Object.assign({}, curStart());
     let robotRun = ROBOT();
     if ($('optReal') && $('optReal').checked) {
       const nr = noisyRobot(robotRun), n = nr.n, pc = (v) => (Math.abs(v) < 0.0005 ? '±' : v >= 0 ? '+' : '−') + fmt(Math.abs(v * 100), 1) + '%';
@@ -1171,6 +1521,7 @@
     $('runBtn').disabled = false;
     if (!r.error && !r.timeout) log('✓ Kész · ' + fmt(r.duration / 1000, 1) + ' mp', 'c-ok');
     if (!r.error && !r.timeout) checkMissionTarget(r);
+    if (!r.error) checkPractice(r);
     if (state.wro && state.wro.judge) {
       applyJudge(Infinity);
       const sc = state.wro.judge.score;
@@ -1213,7 +1564,7 @@
   });
 
   // ------------------------------------------------------------ indulás
-  ta.value = store.get('code', SAMPLES.square);
+  ta.value = baseCode(); store.set('code', ta.value);
   refreshEditor();
   if (!Sim.MATS[state.mat]) state.mat = 'palya1';
   $('matSel').value = store.get('wro', false) ? 'wro1' : state.mat;
@@ -1248,10 +1599,19 @@
       log('📖 Betöltöttem a szótár példáját. Nyomd meg az Indulj! gombot!', 'c-hint');
       return;
     }
+    // gyakorló feladat: #gy3 (vagy #gy3-blocks)
+    const g = /^#(gy\d+)(?:-(python|blocks))?$/.exec(location.hash);
+    if (g && PR.TASKS.some((t) => t.id === g[1])) {
+      if (g[2]) setMode(g[2]);
+      selectPractice(g[1]);
+      try { history.replaceState(null, '', location.pathname); } catch (e) { /* nem baj */ }
+      return;
+    }
     const m = /^#(k\d+)-(python|blocks)$/.exec(location.hash);
     if (!m || !MISSION_START[m[1]]) return;
     const ms = MISSION_START[m[1]], mode = ms[m[2]] ? m[2] : 'python';
     store.set('slot', m[1]); // a mentés ehhez a küldetéshez tartozik
+    store.set('practice', ''); state.practiceRes = null;
     setMode(mode);
     if (ms.wro) {
       state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = 'wro1'; setWro(true);
@@ -1263,20 +1623,22 @@
     } else if (!ms.mat && (state.mat === 'rajzlap' || state.mat === 'edzo')) {
       state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = state.mat; updateMatUi(); fitCanvas();
     }
-    if (ms.start) {
-      state.starts[ms.mat] = Object.assign({}, ms.start); store.set('starts', state.starts);
+    if (ms.start || ms.wro) {
+      const k = ms.wro ? 'wro' : ms.mat;
+      state.starts[k] = ms.start ? Object.assign({}, ms.start) : defaultStart(k); store.set('starts', state.starts);
       state.pose = null; state.result = null; state.ghost = null;
     }
     const key = ms[mode];
     if (mode === 'blocks') {
       state.ws.clear();
-      Blockly.serialization.workspaces.load(window.KodfejtoBlocks.SAMPLES[key].ws, state.ws);
+      Blockly.serialization.workspaces.load(applyDimsWs(window.KodfejtoBlocks.SAMPLES[key].ws), state.ws);
     } else {
-      ta.value = SAMPLES[key]; errLine = 0; refreshEditor(); store.set('code', ta.value);
+      ta.value = applyDims(SAMPLES[key]); errLine = 0; refreshEditor(); store.set('code', ta.value);
     }
     log('📜 Betöltöttem a(z) ' + m[1].slice(1) + '. küldetés kiinduló programját.', 'c-hint');
     try { history.replaceState(null, '', location.pathname); } catch (e) { /* nem baj */ }
   })();
+  fillPracticeSel();
   updateToolHint();
   log('Írd meg a programot, aztán nyomd meg az Indulj! gombot.', 'c-muted');
 
@@ -1323,16 +1685,34 @@
         : d.pointer < 0 || d.pointer > 200 ? 'A mutató 0 és 200 mm között nyúljon ki.'
         : d.axle > d.width ? 'A tengelytáv nem lehet nagyobb, mint a robot szélessége.' : '';
       if (err) { $('rdMsg').textContent = err; return; }
+      // a rajtok bal hátsó sarka (amit a valódi pályán kimérünk) maradjon a helyén
+      const corners = {};
+      Object.entries(state.starts).forEach(([k, st]) => { corners[k] = rearLeft(st); });
       store.set('robotDims', d);
+      Object.entries(state.starts).forEach(([k, st]) => { if (k !== 'rajzlap') { Object.assign(st, fromRearLeft(corners[k], st.heading)); snapStart(st); } });
       dlg.close();
       state.pose = null; state.result = null; state.ghost = null;
-      snapStart(state.starts[state.mat]); store.set('starts', state.starts);
+      snapStart(curStart()); store.set('starts', state.starts);
       updateRobotSummary(); render();
+      syncProgramDims();
       log('⚙ Elmentettem a robot méreteit.' + (Math.max(d.length, d.width) > 250 ? ' Figyelem: a WRO-n a robot legfeljebb 25 × 25 × 25 cm lehet a rajtnál!' : ''), 'c-hint');
     });
     updateRobotSummary();
   })();
 
+  // A robot új méreteit a mostani programba is beírjuk (DriveBase, ill. „1 motor rotation” blokk).
+  function syncProgramDims() {
+    const py = applyDims(ta.value);
+    if (py !== ta.value) { ta.value = py; errLine = 0; refreshEditor(); store.set('code', ta.value); }
+    if (state.ws) {
+      const v = rotCm();
+      state.ws.getAllBlocks(false).forEach((b) => {
+        if (b.type !== 'spike_set_rotation' || b.getFieldValue('UNIT') !== 'cm') return;
+        const t = b.getInputTargetBlock('N');
+        if (t && t.type === 'math_number') t.setFieldValue(v, 'NUM');
+      });
+    }
+  }
   // Ha a program más kerékméretet vagy tengelytávot ír, mint a beállított robot, szólunk.
   function dimsHint(code) {
     const d = dims(), out = [];

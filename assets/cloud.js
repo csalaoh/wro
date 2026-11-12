@@ -53,7 +53,7 @@
   }
 
   function clearStudentData() {
-    ['session', 'badges', 'group', 'profile', 'unlocks', 'code', 'blocks', 'cloudQueue', 'slot', 'wro', 'wroOrder'].forEach(ls.del);
+    ['session', 'badges', 'group', 'profile', 'unlocks', 'code', 'blocks', 'cloudQueue', 'slot', 'wro', 'wroOrder', 'lastCode', 'lastBlocks', 'cloudCode', 'cloudBlocks', 'practice', 'practiceDone'].forEach(ls.del);
   }
 
   async function logout() {
@@ -81,12 +81,18 @@
     ls.set('group', st.student.grp);
     ls.set('profile', Object.assign({}, st.student.avatar || {}, { name: st.student.codename }));
     ls.set('unlocks', st.unlocks || []);
-    if (restore && st.programs && st.programs.length) {
+    if (st.programs && st.programs.length) {
       const last = (mode) => st.programs.filter((p) => p.mode === mode).pop();
       const py = last('python'), bl = last('blocks');
-      if (py) { ls.set('code', py.code); ls.set('slot', py.slot); }
-      if (bl && bl.blocks) ls.set('blocks', bl.blocks);
+      // a legutóbb felhőbe mentett program: a pálya Minta menüjéből visszahozható
+      if (py) ls.set('cloudCode', py.code);
+      if (bl && bl.blocks) ls.set('cloudBlocks', bl.blocks);
+      if (restore) {
+        if (py) { ls.set('code', py.code); ls.set('slot', py.slot); }
+        if (bl && bl.blocks) ls.set('blocks', bl.blocks);
+      }
     }
+    try { window.dispatchEvent(new Event('kodfejto-pulled')); } catch (e) { /* nem baj */ }
     const after = JSON.stringify([ls.get('badges', []), ls.get('group', ''), ls.get('profile', {}), ls.get('unlocks', [])]);
     return before !== after;
   }
@@ -119,6 +125,7 @@
 
   function saveProgram(slot, mode, code, blocks) {
     if (!session()) return;
+    if (mode === 'blocks') { if (blocks) ls.set('cloudBlocks', blocks); } else ls.set('cloudCode', code || '');
     enqueue('kf_save_program', { p_slot: slot || 'szabad', p_mode: mode, p_code: code || '', p_blocks: blocks || null }, 'prog:' + slot + ':' + mode);
   }
   function complete(mission) { if (session()) enqueue('kf_complete', { p_mission: mission }); }
