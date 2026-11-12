@@ -91,6 +91,11 @@
   dialog#sheetDlg::backdrop { background: rgba(29,43,68,.45); }
   dialog#robotDlg { border: 0; border-radius: 22px; padding: 0; width: min(780px, calc(100% - 32px)); color: var(--ink); }
   dialog#robotDlg::backdrop { background: rgba(29,43,68,.45); }
+  .routebox { background: #E7F7F0; border-radius: 12px; padding: 8px 10px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+  .routebox ol { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.45; }
+  .routebox li.empty { list-style: none; margin-left: -20px; color: #55657F; }
+  .routebox .rb-back { font-size: 13.5px; font-weight: 700; display: flex; gap: 6px; align-items: center; }
+  #practicePanel details summary { cursor: pointer; font-weight: 800; color: #5B3FC4; margin-top: 6px; }
   .startinfo { font-size: 14.5px; line-height: 1.45; background: #FFF4E5; border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
   .startinfo b { color: #B45309; }
   .startinfo .sd-tip { font-size: 13px; color: #8A6A3A; }
@@ -198,6 +203,12 @@
           <div><div class="k">idő</div><div class="v" id="tt">–</div></div>
         </div>
       </div>
+      <div class="card panel" id="practicePanel">
+        <h2>GYAKORLÁS</h2>
+        <select id="practiceSel" style="min-height:34px;width:100%" aria-label="Gyakorló feladat"></select>
+        <p class="hint" id="practiceText" style="margin:6px 0 0"></p>
+        <details id="practiceTip" hidden><summary>Segítség</summary><p class="hint" id="practiceTipTxt" style="margin:4px 0 0"></p></details>
+      </div>
       <div class="card panel checks">
         <h2>MEGJELENÍTÉS</h2>
         <label><input type="checkbox" id="optTrail" checked> Nyomvonal</label>
@@ -205,9 +216,19 @@
         <label id="targetRow" hidden><input type="checkbox" id="optTarget" checked> Cél-dobogó mutatása</label>
         <label><input type="checkbox" id="optGhost" checked> Előző próba</label>
         <label for="toolSel" style="margin-top:6px">Mérés
-          <select id="toolSel" style="min-height:34px;margin-left:auto"><option value="none">nincs</option><option value="tape">mérőszalag</option><option value="angle">szögmérő</option><option value="aim">célzás</option></select>
+          <select id="toolSel" style="min-height:34px;margin-left:auto"><option value="none">nincs</option><option value="tape">mérőszalag</option><option value="angle">szögmérő</option><option value="aim">célzás</option><option value="route">útvonaltervező</option></select>
         </label>
         <p class="hint" id="toolHint" style="margin:4px 0 0"></p>
+        <div id="routeBox" class="routebox" hidden>
+          <ol></ol>
+          <label class="rb-back"><input type="checkbox" id="routeBack"> hazafelé tolasson (ne forduljon meg)</label>
+          <div class="row">
+            <button class="btn btn-plain btn-small" type="button" id="routeUndo">↶ Utolsó törlése</button>
+            <button class="btn btn-plain btn-small" type="button" id="routeClear">✕ Mind</button>
+            <button class="btn btn-plain btn-small" type="button" id="routeHome">⌂ Haza a rajtra</button>
+          </div>
+          <button class="btn btn-go btn-small" type="button" id="routeInsert">⤓ Beírom a programba</button>
+        </div>
         <button class="btn btn-plain btn-small" type="button" id="robotAngleBtn" hidden>Mennyit fordult a robot?</button>
         <label for="speedSel" style="margin-top:6px">Sebesség
           <select id="speedSel" style="min-height:34px;margin-left:auto"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select>
@@ -221,6 +242,7 @@
           <button class="btn btn-plain btn-small" type="button" data-rot="5">↻ 5°</button>
           <button class="btn btn-plain btn-small" type="button" data-rot="90">↻ 90°</button>
         </div>
+        <button class="btn btn-plain btn-small" type="button" id="homeStartBtn">⌂ Alaprajt (10,10)</button>
         <p class="hint">Álló robotot az egérrel húzhatsz a pályán (5 mm-es lépésekben igazodik), vagy lent beírhatod a pontos értékeket. A rajthelyzetet a böngésző megjegyzi.</p>
         <div class="startinfo" id="startInfo"></div>
       </div>
@@ -291,6 +313,7 @@
 <script src="pybricks_shim.js"></script>
 <script src="../assets/config.js"></script>
 <script src="../assets/cloud.js"></script>
+<script src="../assets/practice.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>

@@ -53,7 +53,7 @@
   }
 
   function clearStudentData() {
-    ['session', 'badges', 'group', 'profile', 'unlocks', 'code', 'blocks', 'cloudQueue', 'slot', 'wro', 'wroOrder', 'lastCode', 'lastBlocks', 'cloudCode', 'cloudBlocks', 'practice', 'practiceDone'].forEach(ls.del);
+    ['session', 'badges', 'group', 'profile', 'unlocks', 'code', 'blocks', 'cloudQueue', 'slot', 'wro', 'wroOrder'].forEach(ls.del);
   }
 
   async function logout() {
@@ -68,7 +68,7 @@
   async function pull(restore) {
     const s = session();
     if (!s) return false;
-    await flush().catch(() => {});
+    await flush().catch(() => { });
     const st = await rpc('kf_state', { p_token: s.token });
     if (!st || !st.ok) {
       if (st && st.error === 'session') { clearStudentData(); location.reload(); }
@@ -102,7 +102,7 @@
     const q = ls.get('cloudQueue', []).filter((x) => !key || x.key !== key);
     q.push({ fn, args, key });
     ls.set('cloudQueue', q);
-    flush().catch(() => {});
+    flush().catch(() => { });
   }
   let flushing = null;
   function flush() {
@@ -121,7 +121,7 @@
     })().finally(() => { flushing = null; });
     return flushing;
   }
-  window.addEventListener('online', () => flush().catch(() => {}));
+  window.addEventListener('online', () => flush().catch(() => { }));
 
   function saveProgram(slot, mode, code, blocks) {
     if (!session()) return;

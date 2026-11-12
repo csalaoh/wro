@@ -102,6 +102,7 @@
       ['dict', 'Szótár', base + 'szotar.html'],
       ['games', 'Játékok', base + 'jatekok.html'],
       ['wro', 'WRO', base + 'wro.html'],
+      ['help', 'Súgó', base + 'sugo.html'],
     ];
     const el = document.getElementById('siteHeader');
     el.className = 'site-header';
