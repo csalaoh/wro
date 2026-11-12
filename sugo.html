@@ -161,8 +161,8 @@
     <li><span><b>Állj!</b> Megállítja a futó programot.</span></li>
     <li><span><b>Vissza a rajtra.</b> A robotot visszateszi a rajthelyére. Az előző út halványan megmarad, hogy össze tudd hasonlítani.</span></li>
     <li><span><b>Python / Blokk fül.</b> Itt váltasz a kétféle programozás között.</span></li>
-    <li><span><b>Minta betöltése.</b> Kész mintaprogramok a küldetésekből. Ha véletlenül lecserélted a programodat, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza.</span></li>
-    <li><span><b>A szerkesztő.</b> Ide írod a programot (vagy ide húzod a blokkokat). Futás közben kiemeli azt a sort vagy blokkot, amelyiknél a robot éppen tart.</span></li>
+    <li><span><b>Minta betöltése.</b> Kész mintaprogramok a küldetésekből. A lista elején: <b>▢ Üres program</b> (csak az alap) és <b>↩ A legutóbbi programom</b> (amin legutóbb dolgoztál). Ha véletlenül lecserélted a programodat, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza.</span></li>
+    <li><span><b>A szerkesztő.</b> Ide írod a programot (vagy ide húzod a blokkokat). Amikor megnyitod a pályát, itt csak az <b>alap</b> van, ami minden programhoz kell: Pythonban az importok, a <code>hub</code>, a két motor és a <code>robot = DriveBase(…)</code>, blokkban a motorpár, az 1 fordulat hossza és a sebesség. A kerékméretet és a tengelytávot a Robot méretei ablakból veszi. Futás közben kiemeli azt a sort vagy blokkot, amelyiknél a robot éppen tart.</span></li>
     <li><span><b>A robot hubja.</b> A hub kijelzője (5×5 pötty) és a középső gomb fénye. Amit a programod kiír vagy kigyújt, itt látod.</span></li>
     <li><span><b>Konzol.</b> Itt üzen a robot: hibák, tippek, eredmények. A jelek magyarázata <a href="#konzol">lent van</a>.</span></li>
     <li><span><b>A pálya.</b> Felülnézetből látod a robotot. A kék vonal az útja, a narancs szaggatott keret a rajthelye. A piros pöcök a robot eleje: ezzel „mutat” a robot, ennek kell a célba érnie.</span></li>
@@ -178,7 +178,7 @@
     <figure><img src="assets/sugo/blokk.jpg" alt="A blokkos szerkesztő" loading="lazy"></figure>
     <div>
       <p>Bal oldalt a színes kategóriák vannak (Események, Mozgás, Motorok…), pont úgy, mint a SPIKE appban. Kattints egy kategóriára, és húzd át a blokkot a munkaterületre, a sárga <b>when program starts</b> alá.</p>
-      <p>A program eleje mindig ugyanaz: megmondjuk, melyik két motor visz (<b>A+B</b>), mennyit tesz meg a robot egy kerékfordulattal (az iskolai robotnál kb. <b>17,6 cm</b>, mert a kerék kerülete π × 5,6 cm; a régebbi mintákban 17,5 szerepel, az is majdnem jó), és milyen gyorsan menjen.</p>
+      <p>A program eleje mindig ugyanaz: megmondjuk, melyik két motor visz (<b>A+B</b>), mennyit tesz meg a robot egy kerékfordulattal (az iskolai robotnál <b>17,6 cm</b>, mert a kerék kerülete π × 5,6 cm). Ezt az oldal magától beírja a Robot méretei alapján, és milyen gyorsan menjen.</p>
       <div class="warn"><b>Vigyázz a fordulásnál!</b>A blokkos „move right for 90 degrees” a <b>kerék</b> fordulását jelenti, nem a robotét. Az iskolai robotnál 2 kerékfok ≈ 1 robotfok, vagyis 90°-os forduláshoz kb. <b>180</b> kerékfok kell. Ezt fedeztük fel a 3. küldetésben.</div>
       <p>Blokkot törölni: húzd vissza a bal oldali sávba, vagy jelöld ki, és nyomd meg a <span class="kbd">Delete</span> gombot.</p>
     </div>
@@ -233,7 +233,7 @@
         <tr><td>F</td><td>A piros mutató: mennyivel nyúlik ki a robot eleje elé. A célokhoz mindig ennek a végét visszük.</td></tr>
         <tr><td>G, H</td><td>Hol vannak a színszenzorok: milyen messze a robot elejétől, és (ha kettő van) milyen messze egymástól.</td></tr>
       </table>
-      <div class="warn"><b>Fontos</b>Ha a programodban más kerékméret vagy tengelytáv szerepel (<code>wheel_diameter=…</code>, <code>axle_track=…</code>), mint itt, a konzol szól. A kettőnek egyeznie kell!</div>
+      <div class="warn"><b>Fontos</b>Ha itt elmented az új méreteket, az oldal a programodba is beírja őket: Pythonban a <code>wheel_diameter=…</code> és <code>axle_track=…</code> értékét, blokkban az „1 motor rotation” centijét. A betöltött minták is ezekkel jönnek. Ha kézzel más számot írsz a programba, a konzol 💡 jellel szól.</div>
       <h3>Valóság mód</h3>
       <p>A szimulátor robotja tökéletes. A valódi nem az: a kerekek kicsit eltérnek, a robotot sosem tesszük le pontosan egyenesen. Ha bekapcsolod a <b>Valóság módot</b>, minden futásnál kicsit más lesz a robot, mint a valóságban. A konzol 🎲 jellel kiírja, mennyi volt az eltérés. Így kipróbálhatod, hogy a programod <b>mennyire biztos</b>: ha 5 futásból 5-ször célba ér, jó eséllyel a valódi robot is célba ér.</p>
     </div>
@@ -405,7 +405,7 @@
   <details class="faq"><summary>Nem indul a program, szürke az Indulj! gomb.</summary>
     <p>Az első megnyitáskor a böngésző letölti a Pythont, ez lassabb neten fél percig is eltarthat. Várj egy kicsit. Ha nagyon sokáig nem jön, frissítsd az oldalt (<span class="kbd">F5</span>).</p></details>
   <details class="faq"><summary>Eltűnt a programom!</summary>
-    <p>Ha mintát töltöttél be, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza. Belépéssel a program a tárhelyre is mentődik minden futtatáskor. Belépés nélkül csak abban a böngészőben van meg, ahol írtad.</p></details>
+    <p>Amikor megnyitod a pályát, mindig az alapprogrammal indul. Amin legutóbb dolgoztál, azt a <b>Minta betöltése → ↩ A legutóbbi programom</b> hozza vissza. Ha mintát töltöttél be, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza. Belépéssel a program a tárhelyre is mentődik minden futtatáskor. Belépés nélkül csak abban a böngészőben van meg, ahol írtad.</p></details>
   <details class="faq"><summary>A robot a szimulátorban célba ér, a valóságban nem.</summary>
     <p>Nézd végig ezt a listát, sorban:</p>
     <ol class="steps">

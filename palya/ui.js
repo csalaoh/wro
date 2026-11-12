@@ -196,6 +196,51 @@
     if (m) store.set('teacher', m[2] !== '0');
   })();
   const isTeacher = () => store.get('teacher', false);
+
+  // ------------------------------------------------------------ alapprogram és a robot méretei
+  // Megnyitáskor a szerkesztőben csak az alap van: importok, hub, motorok, DriveBase
+  // (blokkban: motorpár, 1 fordulat hossza, sebesség). A számokat a Robot méretei adják.
+  const rotCm = () => Math.round(Math.PI * dims().wheel) / 10;   // 1 kerékfordulat cm-ben
+  function baseCode() {
+    const d = dims();
+    return 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\n'
+      + 'hub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\n'
+      + `robot = DriveBase(bal, jobb, wheel_diameter=${d.wheel}, axle_track=${d.axle})\n\n# Ide írd a programot:\n`;
+  }
+  function baseBlocks() {
+    const B = (type, fields, inputs) => Object.assign({ type }, fields ? { fields } : {}, inputs ? { inputs } : {});
+    const n = (x) => ({ shadow: { type: 'math_number', fields: { NUM: x } } });
+    const list = [B('spike_set_pair', { PAIR: 'A,B' }), B('spike_set_rotation', { UNIT: 'cm' }, { N: n(rotCm()) }), B('spike_set_speed', null, { N: n(50) })];
+    for (let i = list.length - 2; i >= 0; i--) list[i].next = { block: list[i + 1] };
+    const start = B('spike_start'); start.x = 30; start.y = 30; start.next = { block: list[0] };
+    return { blocks: { languageVersion: 0, blocks: [start] } };
+  }
+  // A program kerékméretét és tengelytávját a robot beállításaihoz igazítjuk.
+  function applyDims(code) {
+    const d = dims();
+    return code.replace(/(wheel_diameter\s*=\s*)[\d.]+/g, '$1' + d.wheel).replace(/(axle_track\s*=\s*)[\d.]+/g, '$1' + d.axle);
+  }
+  function applyDimsWs(json) {
+    const j = JSON.parse(JSON.stringify(json)), v = rotCm();
+    const walk = (b) => {
+      if (!b || typeof b !== 'object') return;
+      if (b.type === 'spike_set_rotation' && b.fields && b.fields.UNIT === 'cm' && b.inputs && b.inputs.N) {
+        const sh = b.inputs.N.shadow || b.inputs.N.block;
+        if (sh && sh.fields) sh.fields.NUM = v;
+      }
+      Object.values(b).forEach((x) => { if (x && typeof x === 'object') walk(x); });
+    };
+    walk(j);
+    return j;
+  }
+  // A megnyitás előtti program: a minták menüjéből visszahozható.
+  const LAST = { code: store.get('code', null), blocks: store.get('blocks', null) };
+  if (LAST.code && LAST.code.trim() && !/^[\s\S]*# Ide írd a programot:\s*$/.test(LAST.code)) store.set('lastCode', LAST.code);
+  if (LAST.blocks) {
+    const nb = ((LAST.blocks.blocks || {}).blocks || []).length, first = ((LAST.blocks.blocks || {}).blocks || [])[0];
+    let len = 0, b = first && first.next && first.next.block; while (b) { len++; b = b.next && b.next.block; }
+    if (nb > 1 || len > 3) store.set('lastBlocks', LAST.blocks);
+  }
   function fillSamples() {
     const sel = $('sampleSel');
     const list = state.mode === 'blocks'
@@ -203,24 +248,30 @@
       : Object.entries(PY_SAMPLE_LABELS).filter(([k]) => !TEACHER_SAMPLES.has(k) || isTeacher());
     sel.innerHTML = '';
     const first = document.createElement('option'); first.value = ''; first.textContent = 'Minta betöltése…'; sel.appendChild(first);
+    const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    opt('__base', '▢ Üres program (csak az alap)');
+    if (store.get(state.mode === 'blocks' ? 'lastBlocks' : 'lastCode', null)) opt('__last', '↩ A legutóbbi programom');
     list.forEach(([k, label]) => { const o = document.createElement('option'); o.value = k; o.textContent = label; sel.appendChild(o); });
   }
   $('sampleSel').addEventListener('change', (e) => {
     const k = e.target.value;
     if (!k) return;
     if (state.mode === 'blocks') {
+      const ws = k === '__base' ? baseBlocks() : k === '__last' ? store.get('lastBlocks', null) : applyDimsWs(window.KodfejtoBlocks.SAMPLES[k].ws);
+      if (!ws) { e.target.value = ''; return; }
       if (state.ws.getAllBlocks(false).length) log('A minta lecserélte a blokkokat. A Ctrl+Z visszahozza a régieket.', 'c-muted');
       Blockly.Events.setGroup(true);
       state.ws.clear();
-      Blockly.serialization.workspaces.load(window.KodfejtoBlocks.SAMPLES[k].ws, state.ws);
+      Blockly.serialization.workspaces.load(ws, state.ws);
       Blockly.Events.setGroup(false);
     } else {
+      const src = k === '__base' ? baseCode() : k === '__last' ? store.get('lastCode', '') : applyDims(SAMPLES[k]);
       // A mintát "beírjuk", így Ctrl+Z-vel visszahozható a korábbi program.
       if (ta.value.trim()) log('A minta lecserélte a programodat. A Ctrl+Z visszahozza a régit.', 'c-muted');
       ta.focus();
       ta.select();
-      document.execCommand && document.execCommand('insertText', false, SAMPLES[k]);
-      if (ta.value !== SAMPLES[k]) ta.value = SAMPLES[k];
+      document.execCommand && document.execCommand('insertText', false, src);
+      if (ta.value !== src) ta.value = src;
       errLine = 0; refreshEditor(); store.set('code', ta.value);
     }
     e.target.value = '';
@@ -244,12 +295,9 @@
       move: { scrollbars: true, drag: true, wheel: false },
       theme: Blockly.Theme.defineTheme('kodfejto', { base: Blockly.Themes.Zelos, blockStyles: { procedure_blocks: { colourPrimary: '#FF6680', colourSecondary: '#FF8FA3', colourTertiary: '#D94B66' } }, fontStyle: { family: 'Nunito, sans-serif', weight: '700', size: 12 } }),
     });
-    const saved = store.get('blocks', null);
-    try {
-      Blockly.serialization.workspaces.load(saved || window.KodfejtoBlocks.SAMPLES.fwd.ws, state.ws);
-    } catch (e) {
-      Blockly.serialization.workspaces.load(window.KodfejtoBlocks.SAMPLES.fwd.ws, state.ws);
-    }
+    // megnyitáskor mindig az alapprogram (a régi a Minták menüből visszahozható)
+    Blockly.serialization.workspaces.load(baseBlocks(), state.ws);
+    store.set('blocks', Blockly.serialization.workspaces.save(state.ws));
     state.ws.addChangeListener((ev) => {
       if (ev.isUiEvent) return;
       store.set('blocks', Blockly.serialization.workspaces.save(state.ws));
@@ -820,7 +868,7 @@
       const n = (x) => ({ shadow: { type: 'math_number', fields: { NUM: x } } });
       const list = [
         B('spike_set_pair', { PAIR: 'A,B' }),
-        B('spike_set_rotation', { UNIT: 'cm' }, { N: n(Math.round(Math.PI * d.wheel) / 10) }),
+        B('spike_set_rotation', { UNIT: 'cm' }, { N: n(rotCm()) }),
         B('spike_set_speed', null, { N: n(50) }),
       ];
       legs.forEach((l) => {
@@ -832,9 +880,7 @@
       const start = B('spike_start', null, null); start.x = 30; start.y = 30; start.next = { block: list[0] };
       return { blocks: { languageVersion: 0, blocks: [start] } };
     }
-    let py = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\n'
-      + 'hub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\n'
-      + `robot = DriveBase(bal, jobb, wheel_diameter=${d.wheel}, axle_track=${d.axle})\n\n`
+    let py = baseCode().replace('# Ide írd a programot:\n', '')
       + `# Útvonal a tervezőből. Rajt: ${where}, irány ${Math.round(curStart().heading)}°.\n`;
     legs.forEach((l) => {
       py += `\n# ${l.home === 2 ? 'beállás a rajtirányba' : l.home ? 'vissza a rajtra' : l.n + '. cél'}\n`;
@@ -1515,7 +1561,7 @@
   });
 
   // ------------------------------------------------------------ indulás
-  ta.value = store.get('code', SAMPLES.square);
+  ta.value = baseCode(); store.set('code', ta.value);
   refreshEditor();
   if (!Sim.MATS[state.mat]) state.mat = 'palya1';
   $('matSel').value = store.get('wro', false) ? 'wro1' : state.mat;
@@ -1582,9 +1628,9 @@
     const key = ms[mode];
     if (mode === 'blocks') {
       state.ws.clear();
-      Blockly.serialization.workspaces.load(window.KodfejtoBlocks.SAMPLES[key].ws, state.ws);
+      Blockly.serialization.workspaces.load(applyDimsWs(window.KodfejtoBlocks.SAMPLES[key].ws), state.ws);
     } else {
-      ta.value = SAMPLES[key]; errLine = 0; refreshEditor(); store.set('code', ta.value);
+      ta.value = applyDims(SAMPLES[key]); errLine = 0; refreshEditor(); store.set('code', ta.value);
     }
     log('📜 Betöltöttem a(z) ' + m[1].slice(1) + '. küldetés kiinduló programját.', 'c-hint');
     try { history.replaceState(null, '', location.pathname); } catch (e) { /* nem baj */ }
@@ -1645,11 +1691,25 @@
       state.pose = null; state.result = null; state.ghost = null;
       snapStart(curStart()); store.set('starts', state.starts);
       updateRobotSummary(); render();
+      syncProgramDims();
       log('⚙ Elmentettem a robot méreteit.' + (Math.max(d.length, d.width) > 250 ? ' Figyelem: a WRO-n a robot legfeljebb 25 × 25 × 25 cm lehet a rajtnál!' : ''), 'c-hint');
     });
     updateRobotSummary();
   })();
 
+  // A robot új méreteit a mostani programba is beírjuk (DriveBase, ill. „1 motor rotation” blokk).
+  function syncProgramDims() {
+    const py = applyDims(ta.value);
+    if (py !== ta.value) { ta.value = py; errLine = 0; refreshEditor(); store.set('code', ta.value); }
+    if (state.ws) {
+      const v = rotCm();
+      state.ws.getAllBlocks(false).forEach((b) => {
+        if (b.type !== 'spike_set_rotation' || b.getFieldValue('UNIT') !== 'cm') return;
+        const t = b.getInputTargetBlock('N');
+        if (t && t.type === 'math_number') t.setFieldValue(v, 'NUM');
+      });
+    }
+  }
   // Ha a program más kerékméretet vagy tengelytávot ír, mint a beállított robot, szólunk.
   function dimsHint(code) {
     const d = dims(), out = [];

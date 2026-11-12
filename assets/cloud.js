@@ -53,7 +53,7 @@
   }
 
   function clearStudentData() {
-    ['session', 'badges', 'group', 'profile', 'unlocks', 'code', 'blocks', 'cloudQueue', 'slot', 'wro', 'wroOrder'].forEach(ls.del);
+    ['session', 'badges', 'group', 'profile', 'unlocks', 'code', 'blocks', 'cloudQueue', 'slot', 'wro', 'wroOrder', 'lastCode', 'lastBlocks', 'practice', 'practiceDone'].forEach(ls.del);
   }
 
   async function logout() {
