@@ -194,6 +194,29 @@
         <div class="status" id="wroScore" style="font-size:20px;color:#1E8A55;margin-top:6px"></div>
         <p class="hint" style="margin:6px 0 0">Felvétel: zöld fény + állj 1 mp-ig. Lerakás: kék fény + állj 1 mp-ig. A bíró a mutató végét figyeli.</p>
       </div>
+      <div class="card panel" id="chPanel" hidden>
+        <h2 id="chTitle">VERSENYPÁLYA</h2>
+        <p class="hint" id="chHelp" style="margin:0 0 8px"></p>
+        <p class="hint" id="chEst" hidden style="margin:0 0 8px;color:#B86E00;font-weight:700">1. változat: az elemek mérete és helye becsült (a szabálykönyv fotóiból), a pontszám tájékoztató.</p>
+        <p class="hint" id="chDraw" style="margin:0 0 8px"></p>
+        <div class="row" style="flex-wrap:wrap;gap:8px;align-items:center">
+          <button class="btn btn-plain btn-small" type="button" id="chDrawBtn">🎲 Új sorsolás</button>
+          <label class="sr" for="chSeed">A sorsolás száma</label>
+          <input type="number" id="chSeed" min="1" step="1" style="width:84px;font-weight:800;padding:6px;border-radius:10px;border:2px solid #D7DEEA" title="A sorsolás száma: ha mindenki ugyanazt írja be, ugyanaz lesz a pálya">
+          <button class="btn btn-plain btn-small" type="button" id="chSeedBtn" title="Ugyanaz a sorsolás mindenkinek">Ezt kérem</button>
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">
+          <label class="sr" for="chMode">Mód</label>
+          <select id="chMode" style="font-weight:800">
+            <option value="verseny">Verseny: 2 perc, pontozás</option>
+            <option value="gyakorlas">Gyakorlás: nincs időkorlát</option>
+          </select>
+          <button class="btn btn-plain btn-small" type="button" id="chSheetBtn" hidden>Pontozólap</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-top:8px"><input type="checkbox" id="optChZones"> Célterületek mutatása</label>
+        <div class="status" id="chScore" style="font-size:20px;color:#1E8A55;margin-top:6px"></div>
+        <p class="hint" style="margin:6px 0 0">Tipp: az „Ezt kérem” gombbal mindenki ugyanazt a sorsolást kapja (a tanár felírja a számot a táblára).</p>
+      </div>
       <div class="card panel">
         <h2>MŰSZERFAL</h2>
         <div class="tele">
@@ -250,6 +273,8 @@
         <h2>ROBOT</h2>
         <p class="hint" id="robotSummary" style="margin:0"></p>
         <label style="font-weight:800;display:flex;gap:8px;align-items:center"><input type="checkbox" id="optReal"> Valóság mód (kis eltérések, mint a valódi robotnál)</label>
+        <label style="font-weight:800;display:flex;gap:8px;align-items:center">🦾 Kar (E port): <select id="armSel" style="font-weight:800"></select></label>
+        <p class="hint" id="armHint" style="margin:0"></p>
         <button class="btn btn-plain btn-small" type="button" id="robotBtn">⚙ Robot méretei</button>
       </div>
     </div>
@@ -308,8 +333,13 @@
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/msg/en.js"></script>
 <script src="blocks.js"></script>
 <script src="sim.js"></script>
+<script src="world.js"></script>
 <script src="judge.js"></script>
 <script src="runtime.js"></script>
+<script src="challenges.js"></script>
+<script src="challenges/proba.js"></script>
+<script src="challenges/wro2026-junior.js"></script>
+<script src="challenges/wro2026-elementary.js"></script>
 <script src="pybricks_shim.js"></script>
 <script src="../assets/config.js"></script>
 <script src="../assets/cloud.js"></script>

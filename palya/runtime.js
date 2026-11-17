@@ -116,6 +116,8 @@
       motor_speed: (port, dir) => sim.motors[port].rawSpeed * dir,
       motor_run: (port, dir, speed) => sim.setMotorUserSpeed(port, speed, dir),
       motor_run_angle: (port, dir, speed, angle) => sim.runMotorAngle(port, dir, speed, angle),
+      motor_stalled: (port) => sim.motorStalled(port),
+      motor_run_until_stalled: (port, dir, speed) => { sim.runUntilStalled(port, dir, speed); return sim.motorUserAngle(port, dir); },
 
       // hajtásbázis
       drivebase_new: (lp, ld, rp, rd, wd, at) => {
@@ -222,7 +224,7 @@ _m
     if (timeout) sim.event('print', { text: '⏱ A futás elérte a 3 perces korlátot, a szimulátor leállította.' });
     if (error) sim.event('error', { text: error, line: errorLine });
     sim.event('end');
-    return { frames: sim.frames, events: sim.events, error, errorLine, timeout, lint, duration: sim.t, final: { x: sim.x, y: sim.y, heading: sim.heading } };
+    return { frames: sim.frames, events: sim.events, error, errorLine, timeout, lint, duration: sim.t, final: { x: sim.x, y: sim.y, heading: sim.heading }, world: sim.world ? sim.world.summary() : null };
   }
 
   return { runProgram, createApi, glyph, LINE_LIMIT };

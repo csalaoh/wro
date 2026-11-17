@@ -39,6 +39,11 @@ SPIKE Prime szimulátor Pybricks Pythonhoz és SPIKE App blokkokhoz.
 | `palya/blocks.js` | a blokkos mód (SPIKE App szóblokkok) |
 | `palya/judge.js` | a házi WRO bíró (Ébred a farm): felvesz/lerak, pontozólap |
 | `palya/palya1.png`, `palya2.png`, `rajzlap.png` | a pályák képe, 1 képpont = 1 mm |
+| `palya/world.js` | pályaelemek 2D-ben: tolás, rögzített elemek, karok (tolólap, fogó, emelőkar az E porton), akciózónák |
+| `palya/challenges.js` | a versenypályák nyilvántartása, sorsolás, pontozási segédek |
+| `palya/challenges/proba.js` | próbaverseny az Edzőpályán (minta az új pályákhoz) |
+| `palya/challenges/wro2026-junior.js`, `palya/wro2026j.jpg` | WRO 2026 Junior: Örökségeink Megmentői (1. változat, becsült elemméretek) |
+| `palya/challenges/wro2026-elementary.js`, `palya/wro2026e.jpg` | WRO 2026 Elementary: Robot Sztárzenészek (1. változat, becsült elemméretek) |
 
 ## A robot méretei
 
@@ -53,3 +58,21 @@ C = színszenzor, D = távolságérzékelő, E–F = szabad.
 A `palya/index.html?tanar` címmel megnyitva a mintalistában megjelennek a 🔑 TANÁRI minták (dobogó teljes megoldás, farm saját parancsokkal). A böngésző megjegyzi; kikapcsolás: `palya/index.html?tanar=0`.
 
 A dobogó négyzetének oldala: `palya/ui.js`, `PODIUM_SIDE` (mm) – a mintakódokban a 150-et is át kell írni.
+
+## Versenypályák (korábbi és mostani WRO-feladatok)
+
+A pályaválasztó „Versenypályák” csoportjában vannak. Mindegyiknek van:
+- **sorsolása**: a sorsolás egy szám, amit a „Ezt kérem” gombbal bárki betölthet, így az egész csoport ugyanazon a pályán dolgozik;
+- **versenymódja** (2 perc, utána a bíró leállítja a robotot, és pontoz) és **gyakorló módja** (nincs időkorlát);
+- **pontozólapja**, ami a szabálykönyv pontozólapját követi.
+
+A robot karja a ROBOT panelen választható (nincs / tolólap / fogó / emelőkar), mindegyik az **E porton** van:
+`kar = Motor(Port.E)`, majd `kar.run_angle(300, 90)` (zár / lecsap / emel) és `kar.run_angle(300, -90)`.
+A kar 0 és 90 fok között mozog, a végállásnál elakad, így a `run_until_stalled` is működik.
+
+### Új pálya hozzáadása
+1. A pályaképet 1 képpont = 1 mm méretben (WRO: 2362 × 1143) tedd a `palya/` mappába (jpg is jó).
+2. Másold le a `palya/challenges/proba.js`-t, és írd át: területek (mm, a bal alsó saroktól), elemek, sorsolás, pontozás.
+3. Vegyél fel egy `<script>` sort a `palya/index.html`-be a többi `challenges/…` sor mellé.
+
+A WRO-pályaképek a WRO Association tulajdonai. Az oldal nyilvános GitHub-tárhelyről fut, ezért ezek a képek bárki számára letölthetők.
