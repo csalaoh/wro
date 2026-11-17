@@ -388,13 +388,37 @@
   const canvas = $('mat'), ctx = canvas.getContext('2d');
   function matInfo() { return Sim.MATS[state.mat]; }
   function scale() { return canvas.width / matInfo().width; }
+  // A pálya akkora, amekkora hely jut neki: kitölti a jobb oldali oszlop szélességét,
+  // de nem lesz magasabb, mint ami a képernyőn görgetés nélkül látszik.
   function fitCanvas() {
     const m = matInfo();
-    const maxW = 640, maxH = 640;
-    const s = Math.min(maxW / m.width, maxH / m.height);
-    canvas.width = Math.round(m.width * s);
-    canvas.height = Math.round(m.height * s);
+    const stage = canvas.parentElement, cs = getComputedStyle(stage);
+    const availW = Math.max(320, stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+    // Normál nézetben görgetés nélkül is látszik az egész pálya; „Nagy pálya” nézetben
+    // a teljes szélességet kitölti (ha kell, a pálya alja legörgethető).
+    const availH = document.body.classList.contains('bigmat') ? Infinity : Math.max(320, window.innerHeight - 110);
+    const s = Math.min(availW / m.width, availH / m.height);
+    const w = Math.round(m.width * s), h = Math.round(m.height * s);
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
   }
+  // ablak- vagy elrendezésváltozáskor újraméretezzük (a rajz mm-ben van, így minden arányos marad)
+  let fitPending = false;
+  function refit() {
+    if (fitPending) return;
+    fitPending = true;
+    requestAnimationFrame(() => { fitPending = false; const w = canvas.width; fitCanvas(); if (canvas.width !== w) render(); });
+  }
+  window.addEventListener('resize', refit);
+  if (window.ResizeObserver) new ResizeObserver(refit).observe(canvas.parentElement);
+  // „Nagy pálya”: keskenyebb kódablak, nagyobb pálya
+  function setBig(on) {
+    document.body.classList.toggle('bigmat', on);
+    store.set('bigmat', on);
+    $('bigBtn').textContent = on ? '⛶ Normál nézet' : '⛶ Nagy pálya';
+    refit();
+    setTimeout(() => { if (state.ws && state.mode === 'blocks') Blockly.svgResize(state.ws); }, 50);
+  }
+  $('bigBtn').addEventListener('click', () => setBig(!document.body.classList.contains('bigmat')));
   function toPx(x, y) { const s = scale(); return [x * s, (matInfo().height - y) * s]; }
   function toMm(px, py) { const s = scale(); return [px / s, matInfo().height - py / s]; }
 
@@ -1789,6 +1813,7 @@
   }
   Object.values(state.starts).forEach(snapStart);
   updateMatUi();
+  setBig(store.get('bigmat', false));
   fitCanvas();
   resetHub();
   setMode(state.mode === 'blocks' ? 'blocks' : 'python');
