@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foglalkozások – Kódfejtő Műhely</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/common.css">
+<style>
+  .hero { display: flex; flex-direction: column; gap: 12px; }
+  .hero .kicker { font-weight: 800; color: var(--blue); }
+  .hero h1 { font-size: 44px; }
+  .hero p { margin: 0; font-size: 19px; max-width: 820px; }
+  .lessons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .lcard { display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: var(--ink); }
+  .lcard h2 { font-size: 28px; }
+  .lcard p { margin: 0; color: var(--muted); font-size: 16px; }
+  .state { align-self: flex-start; border-radius: 999px; padding: 5px 14px; font-weight: 800; font-size: 14.5px; }
+  .state.open { background: #DDF6E8; color: var(--green-d); }
+  .state.closed { background: #EEF0F4; color: var(--muted); }
+  .bar { height: 12px; border-radius: 999px; background: var(--sky); overflow: hidden; }
+  .bar span { display: block; height: 100%; background: var(--green); }
+  .banner { border-radius: 18px; padding: 14px 20px; font-weight: 800; font-size: 17px; }
+  .banner.open { background: #DDF6E8; color: var(--green-d); }
+  .banner.closed { background: #FFF6DB; color: #8A6200; }
+  .steps { display: flex; flex-direction: column; gap: 14px; }
+  .task { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 18px; align-items: start; }
+  .tnum { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 30px; color: #fff; background: var(--blue); }
+  .task.done .tnum { background: var(--green); }
+  .task.robot .tnum { background: #E3A008; }
+  .task.locked { opacity: .6; }
+  .task.locked .tnum { background: #B5C9E6; }
+  .task h2 { font-size: 25px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .task .stars { color: #E3A008; font-size: 20px; }
+  .tool { display: inline-block; background: var(--sky); border-radius: 999px; padding: 3px 12px; font-weight: 800; font-size: 14px; }
+  .bonus { display: inline-block; background: #F3EFFF; color: #6B3FD4; border-radius: 999px; padding: 3px 12px; font-weight: 800; font-size: 14px; }
+  .task p { margin: 6px 0 0; font-size: 17px; }
+  .tip { margin-top: 10px; background: #FFF6DB; border-radius: 14px; padding: 10px 14px; font-size: 15.5px; }
+  .tip b { display: block; margin-bottom: 2px; }
+  .acts { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 14px; }
+  .robotbox { margin-top: 14px; background: #FFF1D6; border: 3px solid #E3A008; border-radius: 18px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .robotbox h3 { font-size: 22px; }
+  .robotbox ol { margin: 0; padding-left: 22px; font-size: 16px; display: flex; flex-direction: column; gap: 4px; }
+  .dirs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dirs button { border: 3px solid transparent; background: #fff; border-radius: 999px; padding: 8px 14px; font: 800 15px Nunito, sans-serif; cursor: pointer; }
+  .dirs button.on { border-color: var(--ink); background: var(--sky); }
+  .mm { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-weight: 800; }
+  .mm input { width: 110px; font: 800 20px Nunito, sans-serif; padding: 8px 10px; border-radius: 12px; border: 2px solid #B5C9E6; }
+  .result { margin-top: 10px; font-weight: 800; color: var(--green-d); font-size: 17px; }
+  .err { color: #C9393E; font-weight: 800; }
+  .linkbtn { background: none; border: none; color: var(--blue); font: 800 15px Nunito, sans-serif; cursor: pointer; padding: 0; text-decoration: underline; }
+  @media (max-width: 900px) { .lessons { grid-template-columns: 1fr; } .hero h1 { font-size: 34px; } .task { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header id="siteHeader"></header>
+<main class="page" id="content"></main>
+<footer id="siteFooter"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/cloud.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/practice.js"></script>
+<script src="assets/foglalkozasok.js"></script>
+<script>
+(function () {
+  'use strict';
+  const K = window.Kodfejto, F = window.KodfejtoClass;
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  K.header('class');
+  const root = document.getElementById('content');
+  const DIRNAME = Object.fromEntries(F.DIRS);
+
+  function group() { return K.store.get('group', ''); }
+  function mode() { const g = K.GROUPS[group()]; return g ? g.mode : 'python'; }
+  function mine() { return F.LESSONS.filter((l) => l.groups.includes(group())); }
+  function doneCount(L) { return L.tasks.filter((t) => K.taskDone(t)).length; }
+
+  // ------------------------------------------------------------ lista
+  function list() {
+    const ls = mine();
+    root.innerHTML = `<div class="hero card"><span class="kicker">Foglalkozások</span><h1>Órai feladatok</h1>
+      <p>Ezeket a feladatokat a foglalkozáson oldod meg, sorban. Mindegyiket előbb a virtuális pályán, aztán kipróbálod a valódi robottal is, és beírod, mennyivel tévedett. Csak akkor nyílnak meg, amikor a tanárod elindítja a foglalkozást. Amit már megoldottál, otthon is visszanézheted.</p></div>
+      ${ls.length ? `<div class="lessons">${ls.map((L, i) => {
+        const open = K.lessonOpen(L.id), d = doneCount(L);
+        return `<a class="card lcard" href="#${L.id}">
+          <span class="state ${open ? 'open' : 'closed'}">${open ? '🟢 Most nyitva' : '🔒 Zárva'}</span>
+          <h2>${i + 1}. ${esc(L.title)}</h2><p>${esc(L.story)}</p>
+          <div class="bar" aria-label="${d} feladat kész a ${L.tasks.length}-ből"><span style="width:${Math.round(100 * d / L.tasks.length)}%"></span></div>
+          <small class="muted" style="font-weight:700">${d} / ${L.tasks.length} feladat kész</small></a>`;
+      }).join('')}</div>` : '<div class="card"><p style="margin:0">A csapatodnak még nincs foglalkozása.</p></div>'}`;
+  }
+
+  // ------------------------------------------------------------ egy foglalkozás
+  const draft = {};   // a félig kitöltött valódi eredmény (feladatonként), hogy frissítéskor ne vesszen el
+  let editing = null;
+
+  function lessonView(L) {
+    const open = K.lessonOpen(L.id), m = mode(), res = K.classRes();
+    const cur = L.tasks.find((t) => K.taskAvailable(t) && !K.taskDone(t));
+    root.innerHTML = `
+      <div class="hero card"><span class="kicker">${L.mat === 'palya1' ? 'Pálya1' : 'Pálya2'} · ${L.tasks.length} feladat</span>
+        <h1>${esc(L.title)}</h1><p>${esc(L.story)}</p></div>
+      <div class="banner ${open ? 'open' : 'closed'}">${open
+        ? '🟢 A foglalkozás nyitva van. Haladj sorban: ha kész egy feladat, kipróbálod a valódi robottal, és jön a következő!'
+        : '🔒 A foglalkozás most zárva van. A megoldott feladataidat visszanézheted, a többi a foglalkozáson nyílik meg.'}</div>
+      <div class="steps">${L.tasks.map((t) => taskHtml(t, m, res[t.id], t === cur)).join('')}</div>
+      <div><a href="foglalkozasok.html#" style="font-weight:800">← Vissza a foglalkozásokhoz</a></div>`;
+    bind(L);
+  }
+
+  function taskHtml(t, m, r, current) {
+    const done = K.taskDone(t), avail = K.taskAvailable(t), robot = t.type === 'sim' && r && r.sim && !r.dir;
+    const cls = done ? 'done' : robot ? 'robot' : avail ? '' : 'locked';
+    const head = `<h2>${esc(t.title)} <span class="stars">${'★'.repeat(t.stars)}</span>
+      ${t.bonus ? '<span class="bonus">Bónusz</span>' : ''}<span class="tool">${esc(t.tool)}</span></h2>`;
+    if (!avail) {
+      return `<div class="card task locked"><span class="tnum">${t.n}</span><div>${head}
+        <p>${K.lessonOpen(t.lesson) ? 'Előbb fejezd be az előző feladatot!' : 'A foglalkozáson nyílik meg.'}</p></div></div>`;
+    }
+    const help = t.help ? ` <a href="sugo.html#${t.help}" target="_blank" style="font-weight:800">Súgó: hogyan működik?</a>` : '';
+    let body = `<p>${esc(t.text)}${t.real ? ' <b>(Valóság módban.)</b>' : ''}</p>`;
+    if (!done || current) body += `<div class="tip"><b>Segítség</b>${esc(F.pick(t.tip, m))}${help}</div>`;
+    const href = `palya/index.html#${t.id}-${m}`;
+    if (t.type === 'pipa') {
+      body += done ? '<div class="result">✓ Kész</div>'
+        : `<div class="acts"><button class="btn btn-green" type="button" data-pipa="${t.id}">Megcsináltam ✓</button>${t.help === 'robot' ? `<a class="btn btn-plain" href="palya/index.html">Megnyitom a pályát</a>` : ''}</div>`;
+    } else if (!r || !r.sim) {
+      body += `<div class="acts"><a class="btn btn-blue" href="${href}">Megnyitom a pályán</a>
+        <span class="muted" style="font-weight:700">Ha a pályán sikerül, itt jön a valódi robot.</span></div>`;
+    } else if (!r.dir || editing === t.id) {
+      body += robotForm(t);
+    } else {
+      body += `<div class="result">✓ A szimulátorban célba ért. A valódi robot: ${r.dir === 'pontos' ? 'pontosan célban' : `${r.mm} mm, ${DIRNAME[r.dir].replace(/^\S+\s/, '').toLowerCase()}`}${r.dir === 'pontos' && r.mm ? ` (${r.mm} mm)` : ''}.</div>
+        <div class="acts"><a class="btn btn-plain btn-sm" href="${href}">Újra a pályán</a><button class="linkbtn" type="button" data-edit="${t.id}">Javítom a mérést</button></div>`;
+    }
+    return `<div class="card task ${cls}" id="t-${t.id}"><span class="tnum">${done ? '✓' : robot ? '🤖' : t.n}</span><div>${head}${body}</div></div>`;
+  }
+
+  function robotForm(t) {
+    const d = draft[t.id] || {};
+    const r = K.classRes()[t.id] || {};
+    const mm = d.mm != null ? d.mm : (r.mm != null ? r.mm : '');
+    const dir = d.dir || r.dir || '';
+    const many = (t.route || []).length > 1, home = (t.route || []).includes('haza');
+    return `<div class="robotbox"><h3>🤖 Mehet a valódi robotra!</h3>
+      <ol><li>Vidd át a programot a robotra. <a href="sugo.html#valodi" target="_blank" style="font-weight:800">Hogyan?</a></li>
+        <li>Tedd le a robotot a 10,10-es rajtra, pont úgy, mint a szimulátorban.</li>
+        <li>Indítsd el, és mérd meg vonalzóval: ${home ? 'mennyire áll el a robot a rajttól' : 'milyen messze állt meg a robot eleje ' + (many ? 'az utolsó cél' : 'a cél') + ' közepétől'}.</li>
+        ${t.realTip ? `<li>${esc(t.realTip)}</li>` : ''}</ol>
+      <div class="mm"><label for="mm-${t.id}">Eltérés:</label><input id="mm-${t.id}" type="number" min="0" max="3000" step="1" inputmode="numeric" value="${esc(mm)}" data-mm="${t.id}"> milliméter <span class="muted">(1 cm = 10 mm)</span></div>
+      <div><div style="font-weight:800;margin-bottom:6px">Merre ment mellé?</div>
+        <div class="dirs">${F.DIRS.map(([k, n]) => `<button type="button" data-dir="${t.id}|${k}" class="${dir === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+      <div class="acts" style="margin-top:4px"><button class="btn btn-green" type="button" data-save="${t.id}">Beírom</button>
+        <a class="btn btn-plain btn-sm" href="palya/index.html#${t.id}-${mode()}">Vissza a pályára</a><span class="err" id="err-${t.id}"></span></div></div>`;
+  }
+
+  function bind(L) {
+    root.querySelectorAll('[data-pipa]').forEach((b) => b.onclick = () => { K.classSim(b.dataset.pipa); route(); });
+    root.querySelectorAll('[data-edit]').forEach((b) => b.onclick = () => { editing = b.dataset.edit; route(); });
+    root.querySelectorAll('[data-mm]').forEach((inp) => inp.oninput = () => {
+      draft[inp.dataset.mm] = Object.assign({}, draft[inp.dataset.mm], { mm: inp.value });
+    });
+    root.querySelectorAll('[data-dir]').forEach((b) => b.onclick = () => {
+      const [id, k] = b.dataset.dir.split('|');
+      const inp = root.querySelector(`[data-mm="${id}"]`);
+      draft[id] = Object.assign({}, draft[id], { dir: k, mm: inp ? inp.value : '' });
+      if (k === 'pontos' && inp && inp.value === '') { inp.value = '0'; draft[id].mm = '0'; }
+      route();
+    });
+    root.querySelectorAll('[data-save]').forEach((b) => b.onclick = () => {
+      const id = b.dataset.save, d = draft[id] || {}, r = K.classRes()[id] || {};
+      const inp = root.querySelector(`[data-mm="${id}"]`);
+      const raw = inp ? inp.value.trim() : '';
+      const mm = raw === '' ? NaN : Number(raw.replace(',', '.'));
+      const dir = d.dir || (editing === id ? r.dir : '');
+      const err = root.querySelector('#err-' + id);
+      if (!isFinite(mm) || mm < 0 || mm > 3000) { err.textContent = 'Írd be, hány milliméter volt az eltérés!'; return; }
+      if (!dir) { err.textContent = 'Válaszd ki, merre ment mellé!'; return; }
+      K.classReal(id, Math.round(mm), dir);
+      delete draft[id]; editing = null;
+      route();
+      const next = L.tasks.find((t) => K.taskAvailable(t) && !K.taskDone(t));
+      const el = next && document.getElementById('t-' + next.id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  function route() {
+    const L = F.lesson(location.hash.slice(1));
+    if (L && L.groups.includes(group())) lessonView(L); else list();
+  }
+  let lastHash = location.hash;
+  window.addEventListener('hashchange', () => { if (location.hash !== lastHash) { lastHash = location.hash; editing = null; window.scrollTo(0, 0); } route(); });
+  route();
+  K.onSync(route);
+  // a pálya (másik fül) írja a helyi tárolót: ha visszajössz, frissítünk
+  window.addEventListener('storage', (e) => { if (e.key && /classRes|unlocks/.test(e.key)) route(); });
+  window.addEventListener('focus', route);
+  // felhős módban a tanár nyitja/zárja a foglalkozást: félpercenként ránézünk
+  if (K.cloud()) {
+    setInterval(() => {
+      if (document.hidden || root.querySelector('input:focus')) return;
+      window.KodfejtoCloud.pull(false).then((changed) => { if (changed) route(); }).catch(() => {});
+    }, 20000);
+  }
+  if (!K.cloud() && !K.store.get('group', '')) K.openSetup(() => location.reload());
+})();
+</script>
+</body>
+</html>

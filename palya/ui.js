@@ -18,6 +18,8 @@
 
   SAMPLES.k3 = 'from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\nrobot.settings(straight_speed=240)\n\nrobot.straight(200)\nrobot.turn(90)\n';
 
+  SAMPLES.kar = "from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# A kar motorja az E porton van. (A ROBOT panelen válaszd ki, milyen kar legyen!)\nkar = Motor(Port.E)\n\n# 1. lépés: a kar alaphelyzetbe. Addig forgatjuk visszafelé, amíg el nem akad\n#    a végállásnál - így mindig ugyanonnan indulunk, akárhogy állt a kar.\nkar.run_until_stalled(-300)\nkar.reset_angle(0)          # ez lesz a 0 fok\n\n# 2. lépés: odaállunk az elem elé.\nrobot.straight(100)\n\n# 3. lépés: a kar munkába áll: 90 fokkal pozitív irányba.\n#    Fogó: zár. Tolólap: lecsap. Emelőkar: felemel.\nkar.run_angle(300, 90)\n\n# 4. lépés: visszük az elemet.\nrobot.turn(90)\nrobot.straight(150)\n\n# 5. lépés: elengedjük (a kar vissza 0 fokra).\nkar.run_target(300, 0)\nrobot.straight(-80)\n";
+  SAMPLES.j26sarga = "from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nkar = Motor(Port.E)          # ROBOT panel: Kar = Fogó\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\nrobot.use_gyro(True)\nrobot.settings(straight_speed=400)\n\n# TANÁRI MINTA - WRO 2026 Junior, 2. feladat: az 1. sárga torony csúcsa\n# Rajt: az alaprajt (a rajtterület közepe, jobbra néz).\n\n# Hátrafelé balra, a bal felső sárga négyzet alá (x = 238 mm).\n# Hátrafelé megyünk, hogy a hosszú fogópofák ne söpörjenek semmit.\nrobot.straight(-253.5)\nrobot.turn(-90)              # felfelé fordul\nrobot.straight(424.5)        # a csúcs a pofák közé kerül\nkar.run_angle(300, 90)       # fogó zár\n\n# Vissza a 907 mm-es magasságra, aztán jobbra, végig a pályán\nrobot.straight(-37)\nrobot.turn(90)\nrobot.straight(1430.5)       # a csúcs a jobb felső alap fölé ér\nkar.run_angle(300, -90)      # fogó nyit: a csúcs az alapra kerül\nrobot.straight(-100)\n";
   SAMPLES.wro = 'from pybricks.hubs import PrimeHub\nfrom pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction, Color\nfrom pybricks.robotics import DriveBase\nfrom pybricks.tools import wait\n\nhub = PrimeHub()\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# TANÁRI MINTA – ugyanaz a farm, saját parancsokkal\n\n# A bírónak szóló jelzések (házi WRO, 4.4 pont)\ndef felvesz():\n    hub.light.on(Color.GREEN)\n    hub.speaker.beep(800, 200)\n    wait(1000)\n\ndef lerak():\n    hub.light.on(Color.BLUE)\n    hub.speaker.beep(400, 200)\n    wait(1000)\n\n# K2 kosár a bal felső parcellára\nrobot.turn(7.6)\nrobot.straight(258)\nfelvesz()\nrobot.turn(17.3)\nrobot.straight(370)\nlerak()\n\n# Ha később fogókar kerül a robotra, CSAK a felvesz() és lerak()\n# belsejét kell átírni – a pálya kódja ugyanaz marad.\n';
 
   SAMPLES.k5 = 'from pybricks.pupdevices import Motor\nfrom pybricks.parameters import Port, Direction\nfrom pybricks.robotics import DriveBase\n\nbal = Motor(Port.A, Direction.COUNTERCLOCKWISE)\njobb = Motor(Port.B)\nrobot = DriveBase(bal, jobb, wheel_diameter=56, axle_track=112)\n\n# 1. MEGTANÍTJUK a robotnak, mi az a "negyzet".\n#    Figyeld meg: ettől még NEM mozdul!\ndef negyzet():\n    for i in range(4):\n        robot.straight(150)\n        robot.turn(90)\n\n# 2. KIMONDJUK a szót: most rajzolja meg!\nnegyzet()\n';
@@ -65,6 +67,7 @@
   };
   function defaultStart(key) {
     if (FIXED_START[key]) return Object.assign({}, FIXED_START[key]);
+    if (key.startsWith('ch:')) { const d = window.KodfejtoChallenges.get(key.slice(3)); if (d) return Object.assign({}, d.start); }
     const d = dims();
     return { x: 100 + d.width / 2, y: 100 + d.rear, heading: 0 };
   }
@@ -90,7 +93,7 @@
         ? { C: { forward: Math.max(0, front - d.sensFwd), side: -d.sensGap / 2 }, F: { forward: Math.max(0, front - d.sensFwd), side: d.sensGap / 2 } }
         : { C: { forward: Math.max(0, front - d.sensFwd), side: 0 } },
       distanceSensor: { forward: Math.max(0, front - 5), side: 0 },
-      ports: Object.assign({}, Sim.ROBOT_DEFAULT.ports, { F: d.color2 ? 'color' : null }),
+      ports: Object.assign({}, Sim.ROBOT_DEFAULT.ports, { F: d.color2 ? 'color' : null, E: armKey() !== 'none' ? 'motor-arm' : null }),
     });
   }
   // Valóság mód: minden futásnál kicsit más a robot (kerekek, tengelytáv, letevés),
@@ -111,7 +114,7 @@
     location.replace('../belepes.html?vissza=' + encodeURIComponent('palya/index.html' + location.hash));
     return;
   }
-  if (cloudOn) Cloud.flush().catch(() => {});
+  if (cloudOn && Cloud.session()) Cloud.pull(false).catch(() => {}); else if (cloudOn) Cloud.flush().catch(() => {});  // mentés + a legutóbb mentett program letöltése
 
   // ------------------------------------------------------------ állapot
   const state = {
@@ -124,11 +127,13 @@
     tape: [], tapeFromRobot: false, ang: null, aim: null, route: [], practiceRes: null, dragging: false,
     audio: null,
     wro: null, // házi WRO küldetés állapota (ha be van kapcsolva)
+    ch: null,  // versenypálya (challenges.js) állapota, ha az van kiválasztva
+    chStopT: null, armAngle: 0,
     mode: store.get('mode', store.get('group', '') === 'blokk3' ? 'blocks' : 'python'), ws: null, lastBlock: null,
   };
 
   // Melyik rajthoz tartozunk: a házi WRO-nak saját rajtja van (a Pálya1-en, de a rajtmezőben).
-  function startKey() { return state.wro ? 'wro' : state.mat; }
+  function startKey() { return state.ch ? 'ch:' + state.ch.def.id : state.wro ? 'wro' : state.mat; }
   function curStart() {
     const k = startKey();
     if (!state.starts[k]) state.starts[k] = defaultStart(k);
@@ -188,8 +193,8 @@
       ta.dispatchEvent(new Event('input'));
     }
   });
-  const PY_SAMPLE_LABELS = { beep: 'Első csipogás (1. küldetés)', square: 'Bűvös négyzet (2. küldetés)', k3: 'Fordulás 90 fokkal (3. küldetés)', gyro: 'Négyzet giroszkóppal (4. küldetés)', color: 'Mit lát a színszenzor?', k5: 'A robot új szót tanul: négyzet (5. küldetés)', k6: 'Dobogó – kezdés (6. küldetés)', k7: 'Ébred a farm – kézzel (7. küldetés)', k8: 'Tolass a falhoz! (8. küldetés)', k9: 'Menj a vonalig! (9. küldetés)', k10: 'Igazodj a vonalhoz két szenzorral (10. küldetés)', k11: 'Kövesd a vonalat! (11. küldetés)', k12: 'Hosszú út újrakalibrálással (12. küldetés)', dobogo: '🔑 TANÁRI: dobogó – teljes megoldás', wro: '🔑 TANÁRI: farm – felvesz() és lerak() paranccsal' };
-  const TEACHER_SAMPLES = new Set(['dobogo', 'wro']);
+  const PY_SAMPLE_LABELS = { beep: 'Első csipogás (1. küldetés)', square: 'Bűvös négyzet (2. küldetés)', k3: 'Fordulás 90 fokkal (3. küldetés)', gyro: 'Négyzet giroszkóppal (4. küldetés)', color: 'Mit lát a színszenzor?', k5: 'A robot új szót tanul: négyzet (5. küldetés)', k6: 'Dobogó – kezdés (6. küldetés)', k7: 'Ébred a farm – kézzel (7. küldetés)', k8: 'Tolass a falhoz! (8. küldetés)', k9: 'Menj a vonalig! (9. küldetés)', k10: 'Igazodj a vonalhoz két szenzorral (10. küldetés)', k11: 'Kövesd a vonalat! (11. küldetés)', k12: 'Hosszú út újrakalibrálással (12. küldetés)', kar: 'A kar használata (E port)', dobogo: '🔑 TANÁRI: dobogó – teljes megoldás', wro: '🔑 TANÁRI: farm – felvesz() és lerak() paranccsal', j26sarga: '🔑 TANÁRI: WRO 2026 Junior – sárga torony csúcs (fogóval)' };
+  const TEACHER_SAMPLES = new Set(['dobogo', 'wro', 'j26sarga']);
   // Tanári mód: palya/index.html?tanar  (a böngésző megjegyzi; ?tanar=0 kikapcsolja)
   (function () {
     const m = /[?&]tanar(=([01]))?/.exec(location.search);
@@ -250,14 +255,17 @@
     const first = document.createElement('option'); first.value = ''; first.textContent = 'Minta betöltése…'; sel.appendChild(first);
     const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
     opt('__base', '▢ Üres program (csak az alap)');
-    if (store.get(state.mode === 'blocks' ? 'lastBlocks' : 'lastCode', null)) opt('__last', '↩ A legutóbbi programom');
+    const bl = state.mode === 'blocks', last = store.get(bl ? 'lastBlocks' : 'lastCode', null), cl = store.get(bl ? 'cloudBlocks' : 'cloudCode', null);
+    if (last) opt('__last', '↩ A legutóbbi programom ezen a gépen');
+    if (cl && JSON.stringify(cl) !== JSON.stringify(last)) opt('__cloud', '☁ A legutóbb mentett programom');
     list.forEach(([k, label]) => { const o = document.createElement('option'); o.value = k; o.textContent = label; sel.appendChild(o); });
   }
+  window.addEventListener('kodfejto-pulled', () => fillSamples());
   $('sampleSel').addEventListener('change', (e) => {
     const k = e.target.value;
     if (!k) return;
     if (state.mode === 'blocks') {
-      const ws = k === '__base' ? baseBlocks() : k === '__last' ? store.get('lastBlocks', null) : applyDimsWs(window.KodfejtoBlocks.SAMPLES[k].ws);
+      const ws = k === '__base' ? baseBlocks() : k === '__last' ? store.get('lastBlocks', null) : k === '__cloud' ? store.get('cloudBlocks', null) : applyDimsWs(window.KodfejtoBlocks.SAMPLES[k].ws);
       if (!ws) { e.target.value = ''; return; }
       if (state.ws.getAllBlocks(false).length) log('A minta lecserélte a blokkokat. A Ctrl+Z visszahozza a régieket.', 'c-muted');
       Blockly.Events.setGroup(true);
@@ -265,7 +273,7 @@
       Blockly.serialization.workspaces.load(ws, state.ws);
       Blockly.Events.setGroup(false);
     } else {
-      const src = k === '__base' ? baseCode() : k === '__last' ? store.get('lastCode', '') : applyDims(SAMPLES[k]);
+      const src = k === '__base' ? baseCode() : k === '__last' ? store.get('lastCode', '') : k === '__cloud' ? store.get('cloudCode', '') : applyDims(SAMPLES[k]);
       // A mintát "beírjuk", így Ctrl+Z-vel visszahozható a korábbi program.
       if (ta.value.trim()) log('A minta lecserélte a programodat. A Ctrl+Z visszahozza a régit.', 'c-muted');
       ta.focus();
@@ -380,16 +388,41 @@
   const canvas = $('mat'), ctx = canvas.getContext('2d');
   function matInfo() { return Sim.MATS[state.mat]; }
   function scale() { return canvas.width / matInfo().width; }
+  // A pálya akkora, amekkora hely jut neki: kitölti a jobb oldali oszlop szélességét,
+  // de nem lesz magasabb, mint ami a képernyőn görgetés nélkül látszik.
   function fitCanvas() {
     const m = matInfo();
-    const maxW = 640, maxH = 640;
-    const s = Math.min(maxW / m.width, maxH / m.height);
-    canvas.width = Math.round(m.width * s);
-    canvas.height = Math.round(m.height * s);
+    const stage = canvas.parentElement, cs = getComputedStyle(stage);
+    const availW = Math.max(320, stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+    // Normál nézetben görgetés nélkül is látszik az egész pálya; „Nagy pálya” nézetben
+    // a teljes szélességet kitölti (ha kell, a pálya alja legörgethető).
+    const availH = document.body.classList.contains('bigmat') ? Infinity : Math.max(320, window.innerHeight - 110);
+    const s = Math.min(availW / m.width, availH / m.height);
+    const w = Math.round(m.width * s), h = Math.round(m.height * s);
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
   }
+  // ablak- vagy elrendezésváltozáskor újraméretezzük (a rajz mm-ben van, így minden arányos marad)
+  let fitPending = false;
+  function refit() {
+    if (fitPending) return;
+    fitPending = true;
+    requestAnimationFrame(() => { fitPending = false; const w = canvas.width; fitCanvas(); if (canvas.width !== w) render(); });
+  }
+  window.addEventListener('resize', refit);
+  if (window.ResizeObserver) new ResizeObserver(refit).observe(canvas.parentElement);
+  // „Nagy pálya”: keskenyebb kódablak, nagyobb pálya
+  function setBig(on) {
+    document.body.classList.toggle('bigmat', on);
+    store.set('bigmat', on);
+    $('bigBtn').textContent = on ? '⛶ Normál nézet' : '⛶ Nagy pálya';
+    refit();
+    setTimeout(() => { if (state.ws && state.mode === 'blocks') Blockly.svgResize(state.ws); }, 50);
+  }
+  $('bigBtn').addEventListener('click', () => setBig(!document.body.classList.contains('bigmat')));
   function toPx(x, y) { const s = scale(); return [x * s, (matInfo().height - y) * s]; }
   function toMm(px, py) { const s = scale(); return [px / s, matInfo().height - py / s]; }
 
+  const IMG_SRC = {}; // a versenypályák képei (pl. wro2026j → wro2026j.jpg)
   function loadImage(key) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -403,7 +436,7 @@
         resolve();
       };
       img.onerror = reject;
-      img.src = key + '.png';
+      img.src = IMG_SRC[key] || key + '.png';
     });
   }
   // A színszenzor egy kb. 8 mm-es foltot lát: 5×5 pontot átlagolunk.
@@ -473,6 +506,18 @@
     // tengely közepe
     ctx.fillStyle = '#FF5A5F';
     ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+    // a kar (E port): a mostani szögénél rajzoljuk
+    const A = window.KodfejtoWorld.ATTACHMENTS[armKey()];
+    if (A && A.colliders) {
+      const ang = alpha == null || alpha >= 1 ? state.armAngle : 0;
+      const on = ang >= A.engageAt, c = A.capture;
+      ctx.setLineDash([4, 3]); ctx.strokeStyle = on ? 'rgba(30,138,85,.9)' : 'rgba(85,101,127,.6)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(-c.half * s, -(R.bodyFront + c.f1) * s, 2 * c.half * s, (c.f1 - c.f0) * s);
+      ctx.setLineDash([]);
+      ctx.fillStyle = on ? '#1E8A55' : '#55657F';
+      A.colliders(ang).forEach(([f0, f1, s0, s1]) => ctx.fillRect(s0 * s, -(R.bodyFront + f1) * s, (s1 - s0) * s, (f1 - f0) * s));
+      if (A.lifts && !on) { ctx.globalAlpha *= 0.5; }
+    }
     ctx.restore();
   }
 
@@ -646,7 +691,7 @@
 
   // ------------------------------------------------------------ küldetés célja (edzőpálya)
   function missionTarget() {
-    if (state.mat !== 'edzo') return null;
+    if (state.mat !== 'edzo' || state.ch) return null;
     return MISSION_TARGET[store.get('slot', '')] || null;
   }
   function drawMissionTarget() {
@@ -690,16 +735,23 @@
   // A célokat sorban kell elérni. Egy cél akkor teljesül, ha a robot eleje (a mutató)
   // a célon belül ÁLL MEG: közben a robot alig mozog és alig fordul. Az átsuhanás nem számít.
   const PR = window.KodfejtoPractice || { SPOTS: {}, TASKS: [] };
+  // Foglalkozás-feladatok (assets/foglalkozasok.js): ugyanez a bíró, csak a siker után
+  // a valódi robot jön, és a foglalkozás oldalán nyílik a következő feladat.
+  const FC = window.KodfejtoClass || null, KC = window.Kodfejto || null;
+  function classTask(id) { return FC && /^f\d+_\d+_\d+$/.test(id || '') ? FC.task(id) : null; }
+  function taskById(id) { return PR.TASKS.find((t) => t.id === id) || classTask(id); }
+  function taskMat(task) { return task && task.lesson ? FC.lesson(task.lesson).mat : 'palya1'; }
   function practice() {
-    if (state.mat !== 'palya1' || state.wro) return null;
-    const id = store.get('practice', '');
-    return PR.TASKS.find((t) => t.id === id) || null;
+    const task = taskById(store.get('practice', ''));
+    if (!task || task.type === 'pipa' || state.wro || state.mat !== taskMat(task)) return null;
+    return task;
   }
   function practiceTargets(task) {
     const st = curStart(), P = ROBOT().pointer, h = st.heading * Math.PI / 180;
     return task.route.map((k) => {
       if (k === 'haza') return { home: true, name: 'vissza a rajtra' };
-      if (k === 'elore500') return { x: st.x + Math.sin(h) * (P + 500), y: st.y + Math.cos(h) * (P + 500), r: 20, name: '50 cm-rel a rajt előtt' };
+      const el = /^elore(\d+)$/.exec(k);
+      if (el) { const d = +el[1]; return { x: st.x + Math.sin(h) * (P + d), y: st.y + Math.cos(h) * (P + d), r: 20, name: (d / 10) + ' cm-rel a rajt előtt' }; }
       return Object.assign({}, PR.SPOTS[k]);
     });
   }
@@ -761,9 +813,22 @@
       if (hit >= 0) { from = hit; parts.push(`✔ ${i + 1}. ${t.name}: a mutató ${fmt(best / 10, 1)} cm-re állt meg a közepétől`); }
       else parts.push(`✘ ${i + 1}. ${t.name}: ` + (isFinite(best) ? `a legközelebb ${fmt(best / 10, 1)} cm-re álltál meg tőle (legfeljebb ${fmt(t.r / 10, 1)} cm lehet)` : 'ide már nem jutottál el'));
     });
+    // foglalkozás: Valóság mód és kötelező programrész
+    const real = $('optReal').checked;
+    let extra = '';
+    if (task.real && !real) extra = 'Ezt a feladatot csak Valóság módban fogadjuk el: kapcsold be a Robot panelen, és futtasd újra!';
+    if (task.needs && state.mode === 'python' && !ta.value.replace(/\s+/g, '').includes(task.needs.replace(/\s+/g, ''))) extra = `A programodból hiányzik: ${task.needs}`;
     state.practiceRes = { task: task.id, ok };
-    const all = ok.every(Boolean);
-    log('🎯 ' + task.title + ':\n   ' + parts.join('\n   '), all ? 'c-ok' : 'c-hint');
+    const all = ok.every(Boolean) && !extra;
+    log('🎯 ' + task.title + ':\n   ' + parts.join('\n   ') + (extra ? '\n   ✘ ' + extra : ''), all ? 'c-ok' : 'c-hint');
+    if (all && task.lesson) {
+      if (!KC.taskAvailable(task)) { log('🔒 Ügyes! De ez a foglalkozás most zárva van, ezért nem írtam be. A foglalkozáson nyílik meg.', 'c-hint'); return; }
+      const first = !((KC.classRes()[task.id] || {}).sim);
+      KC.classSim(task.id);
+      log('🤖 Megvan! Mehet a valódi robotra. Utána a „Vissza a foglalkozáshoz” gombbal írd be, mennyivel tévedett.' + (first ? '' : ' (Ezt már korábban is megoldottad.)'), 'c-ok');
+      showPracticeText();
+      return;
+    }
     if (all) {
       const done = store.get('practiceDone', []);
       if (!done.includes(task.id)) { done.push(task.id); store.set('practiceDone', done); fillPracticeSel(); }
@@ -772,30 +837,40 @@
   }
   function fillPracticeSel() {
     const sel = $('practiceSel'); if (!sel) return;
-    const done = store.get('practiceDone', []), cur = store.get('practice', '');
-    sel.innerHTML = '<option value="">– nincs kiválasztva –</option>' + PR.TASKS.map((t) =>
+    const done = store.get('practiceDone', []), cur = store.get('practice', ''), ct = classTask(cur);
+    sel.innerHTML = '<option value="">– nincs kiválasztva –</option>'
+      + (ct ? `<option value="${ct.id}" selected>📋 Foglalkozás ${ct.n}. ${ct.title} ${'★'.repeat(ct.stars)}</option>` : '')
+      + PR.TASKS.map((t) =>
       `<option value="${t.id}"${t.id === cur ? ' selected' : ''}>${done.includes(t.id) ? '✔ ' : ''}${t.title} ${'★'.repeat(t.stars)}</option>`).join('');
     showPracticeText();
   }
   function showPracticeText() {
-    const task = PR.TASKS.find((t) => t.id === store.get('practice', ''));
-    $('practiceText').innerHTML = task ? task.text + (state.mat !== 'palya1' || state.wro ? ' <b>(Ez a Pálya1-en van.)</b>' : '') : 'Válassz egy feladatot! A célok a pályán megszámozva látszanak, a futás után pedig megmondjuk, melyiket érted el.';
+    const task = taskById(store.get('practice', ''));
+    const mat = taskMat(task), matName = mat === 'palya2' ? 'Pálya2' : 'Pálya1';
+    const cls = task && task.lesson, r = cls && KC.classRes()[task.id];
+    $('practiceText').innerHTML = task
+      ? (cls ? `<b>📋 ${task.n}. feladat${task.real ? ' · Valóság módban' : ''}</b><br>` : '') + task.text
+        + (state.mat !== mat || state.wro ? ` <b>(Ez a ${matName}-en van.)</b>` : '')
+        + (r && r.sim ? ' <b style="color:#1E8A55">✔ Megoldottad, mehet a valódi robotra!</b>' : '')
+      : 'Válassz egy feladatot! A célok a pályán megszámozva látszanak, a futás után pedig megmondjuk, melyiket érted el.';
     $('practiceTip').hidden = !task;
-    $('practiceTipTxt').textContent = task ? task.tip : '';
+    $('practiceTipTxt').textContent = task ? (cls ? FC.pick(task.tip, state.mode) : task.tip) : '';
+    const back = $('classBack');
+    if (back) { back.hidden = !cls; if (cls) back.href = '../foglalkozasok.html#' + task.lesson; }
   }
   function selectPractice(id) {
     store.set('practice', id);
     state.practiceRes = null;
     if (id) {
       store.set('slot', id);  // a program ehhez a feladathoz mentődik
-      if (state.mat !== 'palya1' || state.wro) {
-        setWro(false); state.mat = 'palya1'; store.set('mat', state.mat); $('matSel').value = 'palya1'; updateMatUi(); fitCanvas();
+      const t = taskById(id), mat = taskMat(t);
+      if (state.mat !== mat || state.wro) {
+        setWro(false); state.mat = mat; store.set('mat', state.mat); $('matSel').value = mat; updateMatUi(); fitCanvas();
       }
       stopPlayback(false);
-      state.starts.palya1 = defaultStart('palya1'); store.set('starts', state.starts);
+      state.starts[mat] = defaultStart(mat); store.set('starts', state.starts);
       state.pose = null; state.result = null; state.ghost = null;
-      const t = PR.TASKS.find((q) => q.id === id);
-      log('🎯 Gyakorló feladat: ' + t.title + '. A robot a 10,10-es rajton áll.', 'c-hint');
+      log((t.lesson ? '📋 Foglalkozás, ' + t.n + '. feladat: ' : '🎯 Gyakorló feladat: ') + t.title + '. A robot a 10,10-es rajton áll.', 'c-hint');
     }
     fillPracticeSel(); render();
   }
@@ -958,6 +1033,7 @@
     }
     const pose = state.pose || curStart();
     drawWro(pose);
+    drawChallenge(playT);
     drawRobot(pose, 1);
     if ($('optStart').checked) drawStart();
     drawTape();
@@ -1287,13 +1363,15 @@
     stopPlayback(false);
     const v = e.target.value;
     setWro(v === 'wro1');
-    state.mat = v === 'wro1' ? 'palya1' : v; store.set('mat', state.mat);
+    if (v.startsWith('ch:')) { setChallenge(v.slice(3)); state.mat = chMatKey(state.ch.def); }
+    else state.mat = v === 'wro1' ? 'palya1' : v;
+    store.set('mat', state.mat);
     state.pose = null; state.result = null; state.ghost = null; state.tape = []; state.ang = null;
     updateMatUi(); fitCanvas(); render();
   });
   function updateMatUi() {
     $('targetRow').hidden = state.mat !== 'rajzlap';
-    $('homeStartBtn').textContent = state.mat === 'rajzlap' || state.wro ? '⌂ Alaprajt' : '⌂ Alaprajt (10,10)';
+    $('homeStartBtn').textContent = state.mat === 'rajzlap' || state.wro || state.ch ? '⌂ Alaprajt' : '⌂ Alaprajt (10,10)';
     state.practiceRes = null; showPracticeText();
   }
   $('homeStartBtn').addEventListener('click', () => {
@@ -1302,13 +1380,14 @@
     state.starts[k] = defaultStart(k); store.set('starts', state.starts);
     state.pose = null; state.result = null;
     render();
-    log(state.mat === 'rajzlap' || state.wro ? '⌂ A robot az alaprajton áll.' : '⌂ A robot a 10,10-es rajton áll: a hátulja 10 cm-re az alsó, a bal oldala 10 cm-re a bal széltől.', 'c-hint');
+    log(state.mat === 'rajzlap' || state.wro || state.ch ? '⌂ A robot az alaprajton áll.' : '⌂ A robot a 10,10-es rajton áll: a hátulja 10 cm-re az alsó, a bal oldala 10 cm-re a bal széltől.', 'c-hint');
   });
 
   // ------------------------------------------------------------ házi WRO: Ébred a farm
   const J = window.KodfejtoJudge;
   const CROP_COLORS = { RED: '#E8343C', YELLOW: '#FFD400', BLACK: '#1D2B44' };
   function setWro(on) {
+    if (state.ch) setChallenge(null);
     store.set('wro', !!on);
     $('wroPanel').hidden = !on;
     if (on) newDraw(store.get('wroOrder', null)); else state.wro = null;
@@ -1382,6 +1461,7 @@
   function showSheet() {
     const j = state.wro && state.wro.judge;
     if (!j) return;
+    $('sheetTitle').textContent = 'Pontozólap';
     const titles = { 1: '1. Kosarak a parcellákra', 2: '2. A piac előkészítése', 3: '3. Termények a helyükre', 4: '4. Bónusz pontok' };
     let html = '';
     [1, 2, 3, 4].forEach((t) => {
@@ -1399,9 +1479,180 @@
     state.pose = null;
     if (state.result) { state.ghost = state.result; state.result = null; }
     resetWroCards();
+    state.chStopT = null; state.armAngle = 0;
     resetHub();
     render();
   });
+
+
+  // ------------------------------------------------------------ versenypályák (challenges.js)
+  const CH = window.KodfejtoChallenges, WD = window.KodfejtoWorld;
+  function armKey() { const k = store.get('arm', 'none'); return window.KodfejtoWorld.ATTACHMENTS[k] ? k : 'none'; }
+  function chMatKey(def) { return typeof def.mat === 'string' ? def.mat : def.mat.key; }
+  CH.list.forEach((d) => {
+    if (typeof d.mat === 'object') { Sim.MATS[d.mat.key] = { name: d.mat.name, width: d.mat.width, height: d.mat.height }; IMG_SRC[d.mat.key] = d.mat.image; }
+  });
+  (function chOptions() {
+    const og = document.createElement('optgroup'); og.label = 'Versenypályák';
+    CH.list.forEach((d) => { const o = document.createElement('option'); o.value = 'ch:' + d.id; o.textContent = '🏆 ' + (d.short || d.name); og.appendChild(o); });
+    $('matSel').appendChild(og);
+  })();
+  function chCompetitive() { return $('chMode').value === 'verseny'; }
+  function chName(id) {
+    const o = state.ch && state.ch.setup.objects.find((x) => x.id === id);
+    return o ? (o.name || o.id) : id;
+  }
+  function setChallenge(id) {
+    const def = id ? CH.get(id) : null;
+    store.set('ch', def ? def.id : '');
+    $('chPanel').hidden = !def;
+    if (!def) { state.ch = null; return; }
+    state.ch = { def, seed: null, setup: null, judge: null };
+    $('chTitle').textContent = def.name;
+    $('chHelp').textContent = def.help || '';
+    $('chEst').hidden = !def.estimated;
+    $('optChZones').checked = !def.hiddenZones;
+    if (!state.images[chMatKey(def)]) loadImage(chMatKey(def)).then(render).catch(() => log('A pályakép nem töltődött be.', 'c-err'));
+    newChDraw(store.get('chSeed_' + def.id, null));
+  }
+  function newChDraw(seed) {
+    const c = state.ch;
+    c.seed = seed == null ? 1000 + Math.floor(Math.random() * 9000) : seed;
+    store.set('chSeed_' + c.def.id, c.seed);
+    c.setup = c.def.setup(CH.seeded(c.seed));
+    c.judge = null;
+    $('chSeed').value = c.seed;
+    $('chDraw').textContent = c.setup.draw;
+    $('chScore').textContent = ''; $('chSheetBtn').hidden = true;
+  }
+  function chReset() { stopPlayback(false); state.pose = null; state.result = null; state.ghost = null; state.chStopT = null; state.armAngle = 0; }
+  $('chDrawBtn').addEventListener('click', () => { chReset(); newChDraw(); render(); log('🎲 ' + state.ch.seed + '. sorsolás: ' + state.ch.setup.draw, 'c-hint'); });
+  $('chSeedBtn').addEventListener('click', () => {
+    const v = parseInt($('chSeed').value, 10);
+    if (!(v > 0)) { log('A sorsolás száma egy pozitív egész szám legyen.', 'c-err'); return; }
+    chReset(); newChDraw(v); render(); log('🎲 ' + v + '. sorsolás betöltve: ' + state.ch.setup.draw, 'c-hint');
+  });
+  $('chMode').addEventListener('change', () => { store.set('chMode', $('chMode').value); });
+  $('optChZones').addEventListener('change', render);
+  $('chSheetBtn').addEventListener('click', chSheet);
+
+  // A futás után: versenymódban 2 percnél a bíró leállítja a robotot.
+  function chAfterRun(res) {
+    const c = state.ch, lim = chCompetitive() ? c.def.timeLimit : Infinity;
+    if (res.duration > lim) {
+      const fr = res.frames.filter((f) => f.t <= lim);
+      res.frames = fr.length ? fr : res.frames.slice(0, 1);
+      res.events = res.events.filter((e) => e.t <= lim);
+      res.events.push({ t: lim, type: 'print', text: '⏱ Letelt a ' + Math.round(lim / 60000) + ' perc: a bíró leállította a futamot.' });
+      res.duration = lim; res.timeUp = true;
+      const l = res.frames[res.frames.length - 1];
+      res.final = { x: l.x, y: l.y, heading: l.h };
+    }
+    c.judge = CH.evaluate(c.def, res, c.setup, ROBOT(), Infinity);
+    if (!c.judge.startOk) log('⚖ A robot nem teljesen a rajtterületen állt. A versenyen ez szabálytalan rajt!', 'c-err');
+    $('chScore').textContent = ''; $('chSheetBtn').hidden = true;
+  }
+  function chShowScore(timeUp, stopped) {
+    const j = state.ch.judge;
+    log('🏁 Pontszám' + (stopped ? ' a megállításkor' : '') + ': ' + j.total + ' / ' + j.max + ' · idő: ' + Math.round(j.t / 1000) + ' mp', 'c-ok');
+    $('chScore').textContent = j.total + ' / ' + j.max + ' pont';
+    $('chSheetBtn').hidden = false;
+    chSheet();
+  }
+  function chSheet() {
+    const c = state.ch, j = c && c.judge;
+    if (!j) return;
+    let html = '';
+    c.def.tasks.forEach((t) => {
+      html += `<tr class="sec"><td colspan="2">${esc(t.title)}</td></tr>`;
+      j.lines.filter((l) => l.task === t.n).forEach((l) => { html += `<tr><td>${esc(l.text)}</td><td class="pts">${l.pts}</td></tr>`; });
+    });
+    html += `<tr class="tot"><td>A futamon gyűjtött pontszám</td><td class="pts">${j.total} / ${j.max}</td></tr>`;
+    html += `<tr><td>Idő egész másodpercben</td><td class="pts">${Math.round(j.t / 1000)} mp</td></tr>`;
+    $('sheetBody').innerHTML = html;
+    $('sheetTitle').textContent = 'Pontozólap · ' + (c.def.short || c.def.name);
+    $('sheetOrder').textContent = c.seed + '. sorsolás · ' + c.setup.draw + (c.def.estimated ? ' · Az elemek mérete becsült, ezért a pontszám tájékoztató jellegű.' : '');
+    if (typeof $('sheetDlg').showModal === 'function') $('sheetDlg').showModal(); else $('sheetDlg').setAttribute('open', '');
+  }
+
+  // A pálya rajza: célterületek, elemek a lejátszás adott pillanatában.
+  function chFrameAt(t) {
+    const r = state.result;
+    if (!r || r.mat !== state.mat || t < 0) return null;
+    if (state.chStopT != null && !state.play) t = Math.min(t, state.chStopT);
+    const f = r.frames;
+    let lo = 0, hi = f.length - 1;
+    if (t >= f[hi].t) return f[hi];
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (f[m].t <= t) lo = m; else hi = m - 1; }
+    return f[lo];
+  }
+  function drawChallenge(playT) {
+    const c = state.ch;
+    if (!c) return;
+    const s = scale();
+    ctx.save();
+    if ($('optChZones').checked) {
+      (c.def.drawZones || []).forEach((z) => {
+        const P = WD.zonePoly(z.zone).map(([x, y]) => toPx(x, y));
+        ctx.strokeStyle = z.color; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+        ctx.beginPath(); P.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.stroke();
+        if (z.label) { ctx.setLineDash([]); ctx.fillStyle = z.color; ctx.font = '800 11px Nunito, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(z.label, Math.min(...P.map((p) => p[0])) + 4, Math.min(...P.map((p) => p[1])) + 3); }
+      });
+      ctx.setLineDash([]);
+    }
+    const fr = chFrameAt(playT);
+    // akciózónák: a lejátszott idő alatt teljesültek (átszínezés)
+    const fired = {};
+    if (state.result && state.result.mat === state.mat) {
+      state.result.events.forEach((e) => { if ((e.type === 'trigger' || e.type === 'hide') && e.t <= (fr ? fr.t : -1)) fired[e.type + e.id] = true; });
+    }
+    const recolor = {};
+    (c.setup.triggers || []).forEach((t) => { if (fired['trigger' + t.id]) Object.assign(recolor, t.recolor || {}); });
+    const list = c.setup.objects.map((o, i) => {
+      let x = o.x, y = o.y, a = o.a || 0, car = 0;
+      if (fr && fr.o && fr.o[i]) [x, y, a, car] = fr.o[i];
+      return { o, x, y, a, car };
+    });
+    // előbb a földön lévők, aztán a vittek, a végén az emeltek
+    list.sort((p, q) => p.car - q.car).forEach(({ o, x, y, a, car }) => {
+      if (fired['hide' + o.id]) return;
+      const [px, py] = toPx(x, y);
+      ctx.save();
+      ctx.translate(px, py); ctx.rotate(a * Math.PI / 180);
+      const w = o.w * s, h = o.h * s;
+      if (car === 2) { ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 8; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3; }
+      ctx.fillStyle = recolor[o.id] || o.color;
+      const movedP = o.protect && (Math.hypot(x - o.x, y - o.y) > 5 || Math.abs(a - (o.a || 0)) > 5);
+      ctx.strokeStyle = movedP ? '#FF2D2D' : (o.fixed ? '#1D2B44' : '#ffffff');
+      ctx.lineWidth = movedP ? 3 : 1.5;
+      ctx.fillRect(-w / 2, -h / 2, w, h); ctx.shadowColor = 'transparent'; ctx.strokeRect(-w / 2, -h / 2, w, h);
+      if (o.label && Math.min(w, h) >= 9) {
+        ctx.fillStyle = /^#(F|E|f|e)/.test(o.color) ? '#1D2B44' : '#ffffff';
+        ctx.font = `800 ${Math.max(8, Math.round(Math.min(w, h) * 0.55))}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(o.label, 0, 1);
+      }
+      ctx.restore();
+    });
+    if (fr && !state.play && fr.arm != null) state.armAngle = fr.arm;
+    ctx.restore();
+  }
+
+  // a kar kiválasztása (E port)
+  (function armUi() {
+    const sel = $('armSel');
+    Object.entries(WD.ATTACHMENTS).forEach(([k, a]) => { const o = document.createElement('option'); o.value = k; o.textContent = a.name; sel.appendChild(o); });
+    sel.value = armKey();
+    const hint = () => {
+      const a = WD.ATTACHMENTS[armKey()];
+      $('armHint').textContent = a.desc ? a.desc + ' Programból: kar = Motor(Port.E), majd kar.run_angle(300, 90) és kar.run_angle(300, -90).' : 'A robotnak nincs karja (az E port szabad).';
+    };
+    hint();
+    sel.addEventListener('change', () => {
+      store.set('arm', sel.value); hint();
+      state.result = null; state.ghost = null; state.pose = null; state.armAngle = 0; render();
+      log('🦾 Kar: ' + WD.ATTACHMENTS[sel.value].name + (sel.value !== 'none' ? ' · E port: kar = Motor(Port.E)' : ''), 'c-hint');
+    });
+  })();
 
   // ------------------------------------------------------------ futtatás és lejátszás
   async function run() {
@@ -1437,14 +1688,22 @@
       else Cloud.saveProgram(slot, 'python', ta.value, null);
     }
     let res;
+    const arm = armKey();
+    let world = null;
+    if (state.ch || arm !== 'none') {
+      const sp = state.ch ? state.ch.setup : { objects: [], triggers: [] };
+      world = new window.KodfejtoWorld.World({ width: matInfo().width, height: matInfo().height, objects: JSON.parse(JSON.stringify(sp.objects)), triggers: JSON.parse(JSON.stringify(sp.triggers || [])), attachment: arm });
+    }
+    state.chStopT = null;
     try {
-      res = await RT.runProgram(state.pyodide, state.shim, code, { mat: state.mat, start, robot: robotRun }, sampler);
+      res = await RT.runProgram(state.pyodide, state.shim, code, { mat: state.mat, start, robot: robotRun, world, attachment: arm !== 'none' ? window.KodfejtoWorld.ATTACHMENTS[arm] : null }, sampler);
     } catch (e) {
       log('A szimulátor hibába futott: ' + e, 'c-err');
       $('runBtn').disabled = false;
       return;
     }
     res.mat = state.mat;
+    if (state.ch) chAfterRun(res);
     state.result = res;
     dimsHint(code);
     if (state.mode === 'python' && res.lint) res.lint.forEach(([, msg]) => log('💡 ' + msg, 'c-hint'));
@@ -1475,7 +1734,7 @@
       case 'light': setLight(ev.color); break;
       case 'beep': beep(ev.freq, ev.dur / state.play.speed); break;
       case 'print': log(ev.text); break;
-      case 'stall': log(fmt(ev.t / 1000, 1) + ' mp: a robot nekiment a falnak.', 'c-hint'); break;
+      case 'stall': log(fmt(ev.t / 1000, 1) + ' mp: a robot elakadt (fal vagy pályaelem állja útját).', 'c-hint'); break;
       case 'error': {
         ev.text.split('\n').forEach((l) => log(l, 'c-err'));
         const h = hintFor(ev.text);
@@ -1487,6 +1746,9 @@
         break;
       }
       case 'block': state.lastBlock = ev.id; markBlock(ev.id); break;
+      case 'trigger': log('⚡ ' + fmt(ev.t / 1000, 1) + ' mp: ' + ev.text + '!', 'c-ok'); break;
+      case 'grab': if (state.ch) log('✋ ' + fmt(ev.t / 1000, 1) + ' mp: a kar megfogta: ' + chName(ev.id), 'c-hint'); break;
+      case 'release': if (state.ch) log('✋ ' + fmt(ev.t / 1000, 1) + ' mp: a kar elengedte: ' + chName(ev.id), 'c-hint'); break;
       case 'end': break;
     }
   }
@@ -1501,6 +1763,7 @@
     const [pose, fi] = poseAt(r.frames, Math.min(p.t, r.duration), p.fi);
     p.fi = fi;
     state.pose = pose;
+    state.armAngle = r.frames[fi].arm || 0;
     render();
     if (p.t >= r.duration && p.ei >= r.events.length) {
       finish();
@@ -1519,6 +1782,8 @@
     if (!r.error && !r.timeout) log('✓ Kész · ' + fmt(r.duration / 1000, 1) + ' mp', 'c-ok');
     if (!r.error && !r.timeout) checkMissionTarget(r);
     if (!r.error) checkPractice(r);
+    state.armAngle = (r.frames[r.frames.length - 1] || {}).arm || 0;
+    if (state.ch && state.ch.judge) chShowScore(r.timeUp);
     if (state.wro && state.wro.judge) {
       applyJudge(Infinity);
       const sc = state.wro.judge.score;
@@ -1539,6 +1804,12 @@
     $('stopBtn').disabled = true;
     $('runBtn').disabled = !state.pyodide;
     if (announce) log('■ Megállítottad a robotot.', 'c-muted');
+    if (announce && state.ch && state.result) {
+      // A versenyen az „Állj!” véget vet a futamnak: az addigi állapotot pontozzuk.
+      state.chStopT = state.lastStopT || 0;
+      state.ch.judge = window.KodfejtoChallenges.evaluate(state.ch.def, state.result, state.ch.setup, ROBOT(), state.chStopT);
+      chShowScore(false, true);
+    }
     if (announce && state.wro && state.wro.judge && state.result) {
       // A versenyen a „Stop” véget vet a futamnak: az addigi állapotot pontozzuk.
       const t = state.lastStopT || 0;
@@ -1566,13 +1837,19 @@
   if (!Sim.MATS[state.mat]) state.mat = 'palya1';
   $('matSel').value = store.get('wro', false) ? 'wro1' : state.mat;
   if (store.get('wro', false)) { state.mat = 'palya1'; setWro(true); }
+  $('chMode').value = store.get('chMode', 'verseny');
+  if (!store.get('wro', false) && store.get('ch', '') && CH.get(store.get('ch', ''))) {
+    setChallenge(store.get('ch', '')); state.mat = chMatKey(state.ch.def); $('matSel').value = 'ch:' + state.ch.def.id;
+  }
   Object.values(state.starts).forEach(snapStart);
   updateMatUi();
+  setBig(store.get('bigmat', false));
   fitCanvas();
   resetHub();
   setMode(state.mode === 'blocks' ? 'blocks' : 'python');
   // Küldetés megnyitása a címből: #k2-python vagy #k2-blocks
   (function openMission() {
+    if (state.ch && /^#(k\d+|gy\d+|proba)/.test(location.hash)) { setChallenge(null); state.mat = 'palya1'; $('matSel').value = 'palya1'; fitCanvas(); }
     // a Kódszótár „Kipróbálom” gombja: #proba
     if (location.hash === '#proba') {
       const code = store.get('tryCode', null), blocks = store.get('tryBlocks', null);
@@ -1594,6 +1871,17 @@
       }
       ta.value = code; errLine = 0; refreshEditor(); store.set('code', ta.value);
       log('📖 Betöltöttem a szótár példáját. Nyomd meg az Indulj! gombot!', 'c-hint');
+      return;
+    }
+    // foglalkozás-feladat: #f3_1_2-python (vagy -blocks)
+    const fm = /^#(f\d+_\d+_\d+)(?:-(python|blocks))?$/.exec(location.hash);
+    if (fm && classTask(fm[1])) {
+      const t = classTask(fm[1]);
+      try { history.replaceState(null, '', location.pathname); } catch (e) { /* nem baj */ }
+      if (!KC.taskAvailable(t)) { log('🔒 Ez a foglalkozás-feladat most nincs nyitva. A foglalkozáson nyílik meg.', 'c-hint'); return; }
+      if (t.type === 'pipa') return;
+      if (fm[2]) setMode(fm[2]);
+      selectPractice(t.id);
       return;
     }
     // gyakorló feladat: #gy3 (vagy #gy3-blocks)

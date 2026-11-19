@@ -62,6 +62,7 @@
     <a href="#belepes">Belépés</a>
     <a href="#fooldal">Főoldal</a>
     <a href="#kuldetesek">Küldetések</a>
+    <a href="#foglalkozasok">Foglalkozások</a>
     <a href="#palya">A virtuális pálya</a>
     <a href="#rajt">Rajthelyzet</a>
     <a href="#robot">Robot méretei</a>
@@ -89,7 +90,7 @@
     <tr><td>WRO</td><td>Minden a robotversenyről: mi az, hogyan zajlik, mit gyakorolj hozzá.</td></tr>
     <tr><td>Súgó</td><td>Ez az oldal.</td></tr>
   </table>
-  <div class="note"><b>Hol mentődik a munkád?</b>Ha belépéssel használod az oldalt, a programjaid és a jelvényeid a műhely tárhelyére mentődnek, és a tanárod is látja őket. Belépés nélkül (helyi módban) minden csak abban a böngészőben marad, amelyikben dolgoztál. Ha másik gépre ülsz, ott üres lesz.</div>
+  <div class="note"><b>Hol mentődik a munkád?</b>A jelvényeid, a csapatod, az avatárod és a programjaid a műhely tárhelyére mentődnek: bármelyik gépen belépsz, megvannak, és a tanárod is látja őket. A program akkor mentődik, amikor elindítod (<b>Indulj!</b>). A robot méretei, a rajthelyzet és a gyakorló feladatok pipái viszont csak abban a böngészőben maradnak, ahol beállítottad őket: másik gépen ezeket újra be kell állítani.</div>
 </section>
 
 <!-- ============================================================ -->
@@ -151,6 +152,20 @@
 </section>
 
 <!-- ============================================================ -->
+<section class="card" id="foglalkozasok">
+  <h2>Foglalkozások</h2>
+  <p class="lead">Itt kapod meg az órai feladatokat. Sorban kell haladni: mindegyiket előbb a virtuális pályán oldod meg, aztán kipróbálod a valódi robottal.</p>
+  <ol class="legend">
+    <li><span><b>A foglalkozás a tanárodnál nyílik meg.</b> Amíg zárva van, a feladatok nem látszanak. Amit már megoldottál, azt otthon is visszanézheted.</span></li>
+    <li><span><b>Feladat a felületről</b> (például az avatárod): csináld meg, és nyomd meg a <b>Megcsináltam ✓</b> gombot.</span></li>
+    <li><span><b>Feladat a pályán:</b> a <b>Megnyitom a pályán</b> gomb megnyitja a pályát a feladattal. A célok megszámozva látszanak, a futás után a konzol megmondja, sikerült-e. Ha igen, ezt látod: 🤖 <b>Mehet a valódi robotra!</b></span></li>
+    <li><span><b>A valódi robot:</b> vidd át a programot a robotra (<a href="#valodi">hogyan?</a>), tedd le a 10,10-es rajtra, indítsd el, és mérd meg vonalzóval, milyen messze állt meg a robot eleje a céltól. A <b>← Vissza a foglalkozáshoz</b> gombbal menj vissza, írd be, hány milliméter volt, és merre ment mellé, aztán nyomd meg a <b>Beírom</b> gombot.</span></li>
+    <li><span><b>Jön a következő feladat.</b> Mindegyik egy kicsit nehezebb, és mindegyikben a pálya egy újabb eszközét ismered meg. A bónuszfeladat azoknak szól, akik hamar végeznek.</span></li>
+  </ol>
+  <div class="tip"><b>Fontos</b>A valódi robot nem baj, ha mellémegy: ezt írd be őszintén! A méréseitekből állítjuk be a szimulátort, hogy még jobban hasonlítson a valódi robotra. Ha rosszul írtál be valamit, a <b>Javítom a mérést</b> gombbal kijavíthatod.</div>
+</section>
+
+<!-- ============================================================ -->
 <section class="card" id="palya">
   <h2>A virtuális pálya</h2>
   <p class="lead">Itt írod meg a programot, és megnézed, mit csinálna vele a robot. Ugyanaz a program fut, amit a valódi robotra is feltöltesz.</p>
@@ -161,7 +176,7 @@
     <li><span><b>Állj!</b> Megállítja a futó programot.</span></li>
     <li><span><b>Vissza a rajtra.</b> A robotot visszateszi a rajthelyére. Az előző út halványan megmarad, hogy össze tudd hasonlítani.</span></li>
     <li><span><b>Python / Blokk fül.</b> Itt váltasz a kétféle programozás között.</span></li>
-    <li><span><b>Minta betöltése.</b> Kész mintaprogramok a küldetésekből. A lista elején: <b>▢ Üres program</b> (csak az alap) és <b>↩ A legutóbbi programom</b> (amin legutóbb dolgoztál). Ha véletlenül lecserélted a programodat, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza.</span></li>
+    <li><span><b>Minta betöltése.</b> Kész mintaprogramok a küldetésekből. A lista elején: <b>▢ Üres program</b> (csak az alap), <b>↩ A legutóbbi programom ezen a gépen</b>, és ha máshol is dolgoztál, <b>☁ A legutóbb mentett programom</b> (amit utoljára elindítottál, bármelyik gépen). Ha véletlenül lecserélted a programodat, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza.</span></li>
     <li><span><b>A szerkesztő.</b> Ide írod a programot (vagy ide húzod a blokkokat). Amikor megnyitod a pályát, itt csak az <b>alap</b> van, ami minden programhoz kell: Pythonban az importok, a <code>hub</code>, a két motor és a <code>robot = DriveBase(…)</code>, blokkban a motorpár, az 1 fordulat hossza és a sebesség. A kerékméretet és a tengelytávot a Robot méretei ablakból veszi. Futás közben kiemeli azt a sort vagy blokkot, amelyiknél a robot éppen tart.</span></li>
     <li><span><b>A robot hubja.</b> A hub kijelzője (5×5 pötty) és a középső gomb fénye. Amit a programod kiír vagy kigyújt, itt látod.</span></li>
     <li><span><b>Konzol.</b> Itt üzen a robot: hibák, tippek, eredmények. A jelek magyarázata <a href="#konzol">lent van</a>.</span></li>
@@ -405,7 +420,7 @@
   <details class="faq"><summary>Nem indul a program, szürke az Indulj! gomb.</summary>
     <p>Az első megnyitáskor a böngésző letölti a Pythont, ez lassabb neten fél percig is eltarthat. Várj egy kicsit. Ha nagyon sokáig nem jön, frissítsd az oldalt (<span class="kbd">F5</span>).</p></details>
   <details class="faq"><summary>Eltűnt a programom!</summary>
-    <p>Amikor megnyitod a pályát, mindig az alapprogrammal indul. Amin legutóbb dolgoztál, azt a <b>Minta betöltése → ↩ A legutóbbi programom</b> hozza vissza. Ha mintát töltöttél be, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza. Belépéssel a program a tárhelyre is mentődik minden futtatáskor. Belépés nélkül csak abban a böngészőben van meg, ahol írtad.</p></details>
+    <p>Amikor megnyitod a pályát, mindig az alapprogrammal indul. Amin legutóbb ezen a gépen dolgoztál, azt a <b>Minta betöltése → ↩ A legutóbbi programom ezen a gépen</b> hozza vissza. Ha másik gépen dolgoztál, a <b>☁ A legutóbb mentett programom</b> pontot válaszd: ez az, amit utoljára elindítottál. Ha mintát töltöttél be, a <span class="kbd">Ctrl</span> + <span class="kbd">Z</span> visszahozza. A tárhelyre minden futtatáskor (Indulj!) mentődik.</p></details>
   <details class="faq"><summary>A robot a szimulátorban célba ér, a valóságban nem.</summary>
     <p>Nézd végig ezt a listát, sorban:</p>
     <ol class="steps">

@@ -16,14 +16,14 @@ code, pre { font-family: 'JetBrains Mono', monospace; }
 
 /* fejléc */
 .site-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 14px 40px; background: var(--white); border-bottom: 4px solid var(--line); }
+  padding: 14px 28px; background: var(--white); border-bottom: 4px solid var(--line); }
 .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
 .logo-mark { display: grid; grid-template-columns: repeat(2, 18px); gap: 4px; }
 .logo-mark span { height: 18px; border-radius: 4px; }
 .logo-name { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 27px; line-height: 1; }
 .logo-sub { font-size: 12.5px; font-weight: 700; color: var(--muted); }
-.site-nav { display: flex; flex-wrap: wrap; gap: 8px; }
-.site-nav a { text-decoration: none; padding: 9px 16px; border-radius: 999px; background: var(--sky); color: var(--ink); font-weight: 800; font-size: 15.5px; }
+.site-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.site-nav a { text-decoration: none; padding: 9px 12px; border-radius: 999px; background: var(--sky); color: var(--ink); font-weight: 800; font-size: 15.5px; }
 .site-nav a.on { background: var(--ink); color: var(--white); }
 .site-nav a.soon { color: var(--muted); }
 .me { display: flex; align-items: center; gap: 10px; background: none; border: 2px solid var(--line); border-radius: 999px; padding: 4px 14px 4px 4px; cursor: pointer; color: var(--ink); }

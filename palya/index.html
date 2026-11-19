@@ -29,9 +29,12 @@
   .btn-plain { background: #fff; border: 2px solid var(--line); border-bottom-width: 5px; color: var(--ink); font-size: 15px; }
   .btn-small { min-height: 40px; padding: 0 12px; font-size: 14px; border-radius: 10px; }
   select { min-height: 44px; padding: 0 10px; border: 2px solid var(--line); border-radius: 12px; background: #fff; font-weight: 700; font-size: 15px; color: var(--ink); }
-  main { display: grid; grid-template-columns: minmax(600px, 1fr) auto; gap: 18px; padding: 16px 24px 24px; align-items: start; }
+  /* A pálya kapja a nagyobb részt: pontosan látni kell a tervezéshez. A „Nagy pálya”
+     gombbal (body.bigmat) a szerkesztő még keskenyebb, a pálya még nagyobb lesz. */
+  main { display: grid; grid-template-columns: minmax(440px, 37fr) minmax(0, 63fr); gap: 18px; padding: 16px 24px 24px; align-items: start; }
+  body.bigmat main { grid-template-columns: minmax(360px, 24fr) minmax(0, 76fr); }
   .left { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
-  .right { display: flex; gap: 14px; align-items: flex-start; }
+  .right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .card { background: #fff; border-radius: 18px; border-bottom: 5px solid var(--line); }
   .tabs { display: flex; gap: 6px; padding: 10px 12px 0; border-bottom: 2px solid var(--line); align-items: flex-end; }
   .tab { min-height: 40px; padding: 0 16px; border: 0; background: transparent; font-weight: 800; font-size: 15px; color: var(--muted); border-bottom: 3px solid transparent; }
@@ -59,22 +62,14 @@
   .speaker { font-size: 12px; font-weight: 700; color: var(--muted); min-height: 16px; }
   .console { flex: 1 1 240px; min-width: 0; background: #14203A; color: #E6EDF7; border-radius: 18px; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; height: 200px; overflow: auto; white-space: pre-wrap; }
   .console .c-muted { color: #8EA3C0; } .console .c-err { color: #FF9A9E; } .console .c-hint { color: var(--yellow); } .console .c-ok { color: #7BE0A8; }
-  .stage { position: relative; padding: 10px; }
-  canvas#mat { display: block; border-radius: 12px; touch-action: none; }
+  .stage { position: relative; padding: 10px; width: 100%; box-sizing: border-box; }
+  canvas#mat { display: block; margin: 0 auto; border-radius: 12px; touch-action: none; }
   .stage .loading { position: absolute; inset: 10px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.85); border-radius: 12px; font-weight: 800; font-size: 18px; text-align: center; padding: 20px; }
-  .side { width: 240px; display: flex; flex-direction: column; gap: 12px; }
-  /* Keskenyebb képernyőn a műszerfal a pálya alá kerül, a pálya kicsit kisebb,
-     így a szerkesztő elég széles a leghosszabb sorokhoz is. */
-  @media (max-width: 1640px) {
-    main { grid-template-columns: minmax(720px, 1fr) minmax(400px, 660px); }
-    .right { flex-direction: column; min-width: 0; }
-    .stage { width: 100%; }
-    canvas#mat { width: 100%; height: auto; }
-    .side { width: 100%; flex-direction: row; flex-wrap: wrap; }
-    .side > * { flex: 1 1 180px; }
-  }
+  /* a műszerfal és a többi panel a pálya alatt, egymás mellett */
+  .side { width: 100%; display: flex; flex-direction: row; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+  .side > * { flex: 1 1 220px; min-width: 0; }
   @media (max-width: 1200px) {
-    main { grid-template-columns: 1fr; }
+    main, body.bigmat main { grid-template-columns: 1fr; }
   }
   .panel { padding: 14px; }
   .panel h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: 1.5px; color: var(--muted); font-weight: 800; }
@@ -144,6 +139,7 @@
     <button class="btn btn-go" id="runBtn" disabled>▶ Indulj!</button>
     <button class="btn btn-stop" id="stopBtn" disabled>■ Állj!</button>
     <button class="btn btn-plain" id="resetBtn">Vissza a rajtra</button>
+    <button class="btn btn-plain" id="bigBtn" type="button" title="A pálya kitölti a teljes szélességet, a kódablak keskenyebb lesz">⛶ Nagy pálya</button>
   </div>
 </header>
 <main>
@@ -194,6 +190,29 @@
         <div class="status" id="wroScore" style="font-size:20px;color:#1E8A55;margin-top:6px"></div>
         <p class="hint" style="margin:6px 0 0">Felvétel: zöld fény + állj 1 mp-ig. Lerakás: kék fény + állj 1 mp-ig. A bíró a mutató végét figyeli.</p>
       </div>
+      <div class="card panel" id="chPanel" hidden>
+        <h2 id="chTitle">VERSENYPÁLYA</h2>
+        <p class="hint" id="chHelp" style="margin:0 0 8px"></p>
+        <p class="hint" id="chEst" hidden style="margin:0 0 8px;color:#B86E00;font-weight:700">1. változat: az elemek mérete és helye becsült (a szabálykönyv fotóiból), a pontszám tájékoztató.</p>
+        <p class="hint" id="chDraw" style="margin:0 0 8px"></p>
+        <div class="row" style="flex-wrap:wrap;gap:8px;align-items:center">
+          <button class="btn btn-plain btn-small" type="button" id="chDrawBtn">🎲 Új sorsolás</button>
+          <label class="sr" for="chSeed">A sorsolás száma</label>
+          <input type="number" id="chSeed" min="1" step="1" style="width:84px;font-weight:800;padding:6px;border-radius:10px;border:2px solid #D7DEEA" title="A sorsolás száma: ha mindenki ugyanazt írja be, ugyanaz lesz a pálya">
+          <button class="btn btn-plain btn-small" type="button" id="chSeedBtn" title="Ugyanaz a sorsolás mindenkinek">Ezt kérem</button>
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">
+          <label class="sr" for="chMode">Mód</label>
+          <select id="chMode" style="font-weight:800">
+            <option value="verseny">Verseny: 2 perc, pontozás</option>
+            <option value="gyakorlas">Gyakorlás: nincs időkorlát</option>
+          </select>
+          <button class="btn btn-plain btn-small" type="button" id="chSheetBtn" hidden>Pontozólap</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-top:8px"><input type="checkbox" id="optChZones"> Célterületek mutatása</label>
+        <div class="status" id="chScore" style="font-size:20px;color:#1E8A55;margin-top:6px"></div>
+        <p class="hint" style="margin:6px 0 0">Tipp: az „Ezt kérem” gombbal mindenki ugyanazt a sorsolást kapja (a tanár felírja a számot a táblára).</p>
+      </div>
       <div class="card panel">
         <h2>MŰSZERFAL</h2>
         <div class="tele">
@@ -208,6 +227,7 @@
         <select id="practiceSel" style="min-height:34px;width:100%" aria-label="Gyakorló feladat"></select>
         <p class="hint" id="practiceText" style="margin:6px 0 0"></p>
         <details id="practiceTip" hidden><summary>Segítség</summary><p class="hint" id="practiceTipTxt" style="margin:4px 0 0"></p></details>
+        <a class="btn btn-plain" id="classBack" href="../foglalkozasok.html" hidden style="margin-top:8px;min-height:34px;font-size:14px">← Vissza a foglalkozáshoz</a>
       </div>
       <div class="card panel checks">
         <h2>MEGJELENÍTÉS</h2>
@@ -250,6 +270,8 @@
         <h2>ROBOT</h2>
         <p class="hint" id="robotSummary" style="margin:0"></p>
         <label style="font-weight:800;display:flex;gap:8px;align-items:center"><input type="checkbox" id="optReal"> Valóság mód (kis eltérések, mint a valódi robotnál)</label>
+        <label style="font-weight:800;display:flex;gap:8px;align-items:center">🦾 Kar (E port): <select id="armSel" style="font-weight:800"></select></label>
+        <p class="hint" id="armHint" style="margin:0"></p>
         <button class="btn btn-plain btn-small" type="button" id="robotBtn">⚙ Robot méretei</button>
       </div>
     </div>
@@ -308,12 +330,19 @@
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/msg/en.js"></script>
 <script src="blocks.js"></script>
 <script src="sim.js"></script>
+<script src="world.js"></script>
 <script src="judge.js"></script>
 <script src="runtime.js"></script>
+<script src="challenges.js"></script>
+<script src="challenges/proba.js"></script>
+<script src="challenges/wro2026-junior.js"></script>
+<script src="challenges/wro2026-elementary.js"></script>
 <script src="pybricks_shim.js"></script>
 <script src="../assets/config.js"></script>
 <script src="../assets/cloud.js"></script>
+<script src="../assets/common.js"></script>
 <script src="../assets/practice.js"></script>
+<script src="../assets/foglalkozasok.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>

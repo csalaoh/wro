@@ -74,6 +74,19 @@ create table if not exists public.kf_teachers (
   created_at timestamptz not null default now()
 );
 
+-- Foglalkozások (órai feladatsorok): diákonként és feladatonként egy sor.
+-- sim_at  = a szimulátorban (vagy kipipálva) megoldotta;
+-- real_mm / real_dir = a valódi robottal mért eltérés (mm) és iránya, ezt a diák írja be.
+create table if not exists public.kf_class_results (
+  student_id uuid not null references public.kf_students(id) on delete cascade,
+  task       text not null,
+  sim_at     timestamptz not null default now(),
+  real_mm    int,
+  real_dir   text,
+  real_at    timestamptz,
+  primary key (student_id, task)
+);
+
 create index if not exists kf_sessions_student on public.kf_sessions(student_id);
 
 -- ---------------------------------------------------------------- jogosultságok
@@ -83,11 +96,13 @@ alter table public.kf_progress enable row level security;
 alter table public.kf_programs enable row level security;
 alter table public.kf_unlocks  enable row level security;
 alter table public.kf_teachers enable row level security;
+alter table public.kf_class_results enable row level security;
 
 revoke all on public.kf_students, public.kf_sessions, public.kf_progress,
-              public.kf_programs, public.kf_unlocks, public.kf_teachers from anon;
+              public.kf_programs, public.kf_unlocks, public.kf_teachers,
+              public.kf_class_results from anon;
 grant select, insert, update, delete on public.kf_students, public.kf_progress,
-              public.kf_programs, public.kf_unlocks to authenticated;
+              public.kf_programs, public.kf_unlocks, public.kf_class_results to authenticated;
 grant select on public.kf_teachers to authenticated;
 revoke all on public.kf_sessions from authenticated;
 
@@ -108,6 +123,9 @@ create policy kf_teacher_all on public.kf_programs for all to authenticated
   using (public.kf_is_teacher()) with check (public.kf_is_teacher());
 drop policy if exists kf_teacher_all on public.kf_unlocks;
 create policy kf_teacher_all on public.kf_unlocks for all to authenticated
+  using (public.kf_is_teacher()) with check (public.kf_is_teacher());
+drop policy if exists kf_teacher_all on public.kf_class_results;
+create policy kf_teacher_all on public.kf_class_results for all to authenticated
   using (public.kf_is_teacher()) with check (public.kf_is_teacher());
 drop policy if exists kf_teacher_self on public.kf_teachers;
 create policy kf_teacher_self on public.kf_teachers for select to authenticated
@@ -182,10 +200,17 @@ begin
     'student', json_build_object('codename', st.codename, 'grp', st.grp, 'avatar', st.avatar),
     'progress', coalesce((select json_agg(json_build_object('mission', mission, 'done_at', done_at) order by done_at)
                             from public.kf_progress where student_id = v_id), '[]'::json),
+    -- A foglalkozásokat (f-fel kezdődő azonosító) a tanár órára nyitja meg. Ha elfelejti
+    -- lezárni, a csoportnak szóló nyitás 4 óra után magától lejár; az egyéni (pótló) nem.
     'unlocks', coalesce((select json_agg(distinct mission) from public.kf_unlocks
-                          where scope = 'all'
+                          where (scope = 'all'
                              or (scope = 'group' and target = st.grp)
-                             or (scope = 'student' and target = st.codename)), '[]'::json),
+                             or (scope = 'student' and target = st.codename))
+                            and not (mission like 'f%' and scope <> 'student'
+                                     and created_at < now() - interval '4 hours')), '[]'::json),
+    'class', coalesce((select json_agg(json_build_object('task', task, 'sim_at', sim_at,
+                             'real_mm', real_mm, 'real_dir', real_dir, 'real_at', real_at) order by sim_at)
+                         from public.kf_class_results where student_id = v_id), '[]'::json),
     'programs', coalesce((select json_agg(json_build_object('slot', slot, 'mode', mode, 'code', code,
                              'blocks', blocks, 'updated_at', updated_at) order by updated_at)
                             from public.kf_programs where student_id = v_id), '[]'::json)
@@ -218,6 +243,36 @@ begin
   if v_id is null then return json_build_object('ok', false, 'error', 'session'); end if;
   if char_length(p_mission) > 20 then return json_build_object('ok', false, 'error', 'size'); end if;
   insert into public.kf_progress(student_id, mission) values (v_id, p_mission) on conflict do nothing;
+  return json_build_object('ok', true);
+end $$;
+
+-- Foglalkozás: a feladatot megoldotta a szimulátorban (vagy kipipálta).
+create or replace function public.kf_class_sim(p_token uuid, p_task text)
+returns json language plpgsql security definer set search_path = public as $$
+declare v_id uuid;
+begin
+  v_id := public.kf_student_of(p_token);
+  if v_id is null then return json_build_object('ok', false, 'error', 'session'); end if;
+  if char_length(p_task) > 20 then return json_build_object('ok', false, 'error', 'size'); end if;
+  insert into public.kf_class_results(student_id, task) values (v_id, p_task) on conflict do nothing;
+  return json_build_object('ok', true);
+end $$;
+
+-- Foglalkozás: a valódi robottal mért eltérés. Újra beírva felülírja.
+create or replace function public.kf_class_real(p_token uuid, p_task text, p_mm int, p_dir text)
+returns json language plpgsql security definer set search_path = public as $$
+declare v_id uuid;
+begin
+  v_id := public.kf_student_of(p_token);
+  if v_id is null then return json_build_object('ok', false, 'error', 'session'); end if;
+  if char_length(p_task) > 20 or p_mm < 0 or p_mm > 3000
+     or p_dir not in ('pontos', 'elotte', 'tulment', 'balra', 'jobbra') then
+    return json_build_object('ok', false, 'error', 'size');
+  end if;
+  insert into public.kf_class_results(student_id, task, real_mm, real_dir, real_at)
+  values (v_id, p_task, p_mm, p_dir, now())
+  on conflict (student_id, task) do update
+     set real_mm = excluded.real_mm, real_dir = excluded.real_dir, real_at = now();
   return json_build_object('ok', true);
 end $$;
 
@@ -268,10 +323,12 @@ revoke execute on function public.kf_is_teacher(), public.kf_student_of(uuid), p
   public.kf_login(text, text), public.kf_logout(uuid), public.kf_state(uuid),
   public.kf_save_program(uuid, text, text, text, jsonb), public.kf_complete(uuid, text),
   public.kf_set_avatar(uuid, jsonb), public.kf_ping(), public.kf_teacher_create(text, text, text),
-  public.kf_teacher_set_pics(uuid, text) from public, anon, authenticated;
+  public.kf_teacher_set_pics(uuid, text), public.kf_class_sim(uuid, text),
+  public.kf_class_real(uuid, text, int, text) from public, anon, authenticated;
 grant execute on function public.kf_roster(), public.kf_login(text, text), public.kf_logout(uuid),
   public.kf_state(uuid), public.kf_save_program(uuid, text, text, text, jsonb),
-  public.kf_complete(uuid, text), public.kf_set_avatar(uuid, jsonb), public.kf_ping()
+  public.kf_complete(uuid, text), public.kf_set_avatar(uuid, jsonb), public.kf_ping(),
+  public.kf_class_sim(uuid, text), public.kf_class_real(uuid, text, int, text)
   to anon, authenticated;
 grant execute on function public.kf_is_teacher(), public.kf_teacher_create(text, text, text),
   public.kf_teacher_set_pics(uuid, text) to authenticated;

@@ -76,6 +76,32 @@
   // Nyitott-e a küldetés? Helyi módban minden nyitott; felhős módban a tanár
   // oldja fel (vagy a diák már teljesítette).
   function unlocked(id) { return !cloud() || store.get('unlocks', []).includes(id) || badges().includes(id); }
+  // ------------------------------------------------------------ foglalkozások
+  // Eredmények: { 'f3_1_2': { sim: true, mm: 12, dir: 'elotte' } }
+  function classRes() { return store.get('classRes', {}); }
+  function classSim(id) {
+    const r = classRes(); if (r[id] && r[id].sim) return;
+    r[id] = Object.assign({}, r[id], { sim: true }); store.set('classRes', r);
+    if (cloud()) window.KodfejtoCloud.classSim(id);
+  }
+  function classReal(id, mm, dir) {
+    const r = classRes(); r[id] = { sim: true, mm, dir }; store.set('classRes', r);
+    if (cloud()) window.KodfejtoCloud.classReal(id, mm, dir);
+  }
+  // Nyitva van-e most a foglalkozás? Helyi módban mindig; felhős módban, ha a tanár megnyitotta.
+  function lessonOpen(id) { return !cloud() || store.get('unlocks', []).includes(id); }
+  // Kész-e a feladat: kipipálta, vagy (szimulátoros feladatnál) a valódi eredményt is beírta.
+  function taskDone(t) { const r = classRes()[t.id]; return !!(r && r.sim && (t.type === 'pipa' || r.dir)); }
+  // Elérhető-e a feladat: nyitott foglalkozáson az előző kész; zárt foglalkozáson csak a már megoldott.
+  function taskAvailable(t) {
+    const L = window.KodfejtoClass && window.KodfejtoClass.lesson(t.lesson); if (!L) return false;
+    const r = classRes()[t.id];
+    if (r && r.sim) return true;
+    if (!lessonOpen(L.id)) return false;
+    const prev = L.tasks.find((x) => x.n === t.n - 1);
+    return !prev || taskDone(prev);
+  }
+
   const syncCbs = [];
   function onSync(cb) { syncCbs.push(cb); }
   function rank() { const n = badges().length; let r = RANKS[0][1]; RANKS.forEach(([k, name]) => { if (n >= k) r = name; }); return r; }
@@ -98,6 +124,7 @@
     const nav = [
       ['home', 'Főoldal', base + 'index.html'],
       ['missions', 'Küldetések', base + 'kuldetesek.html'],
+      ['class', 'Foglalkozások', base + 'foglalkozasok.html'],
       ['track', 'Pálya', base + 'palya/index.html'],
       ['dict', 'Szótár', base + 'szotar.html'],
       ['games', 'Játékok', base + 'jatekok.html'],
@@ -170,5 +197,6 @@
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
   }
 
-  window.Kodfejto = { store, GROUPS, profile, avatarSVG, BADGES, badges, earn, rank, header, openSetup, unlocked, onSync, cloud };
+  window.Kodfejto = { store, GROUPS, profile, avatarSVG, BADGES, badges, earn, rank, header, openSetup, unlocked, onSync, cloud,
+    classRes, classSim, classReal, lessonOpen, taskDone, taskAvailable };
 })();

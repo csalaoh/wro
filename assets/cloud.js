@@ -53,7 +53,7 @@
   }
 
   function clearStudentData() {
-    ['session', 'badges', 'group', 'profile', 'unlocks', 'code', 'blocks', 'cloudQueue', 'slot', 'wro', 'wroOrder', 'lastCode', 'lastBlocks', 'practice', 'practiceDone'].forEach(ls.del);
+    ['session', 'badges', 'group', 'profile', 'unlocks', 'code', 'blocks', 'cloudQueue', 'slot', 'wro', 'wroOrder', 'lastCode', 'lastBlocks', 'cloudCode', 'cloudBlocks', 'practice', 'practiceDone', 'classRes'].forEach(ls.del);
   }
 
   async function logout() {
@@ -74,21 +74,35 @@
       if (st && st.error === 'session') { clearStudentData(); location.reload(); }
       return false;
     }
-    const before = JSON.stringify([ls.get('badges', []), ls.get('group', ''), ls.get('profile', {}), ls.get('unlocks', [])]);
+    const snap = () => JSON.stringify([ls.get('badges', []), ls.get('group', ''), ls.get('profile', {}), ls.get('unlocks', []), ls.get('classRes', {})]);
+    const before = snap();
     const queued = ls.get('cloudQueue', []).filter((q) => q.fn === 'kf_complete').map((q) => q.args.p_mission);
     const badges = Array.from(new Set(st.progress.map((p) => p.mission).concat(queued)));
     ls.set('badges', badges);
     ls.set('group', st.student.grp);
     ls.set('profile', Object.assign({}, st.student.avatar || {}, { name: st.student.codename }));
     ls.set('unlocks', st.unlocks || []);
-    if (restore && st.programs && st.programs.length) {
+    // foglalkozások: a szerver állapota + ami még a sorban vár (nincs net)
+    const cr = {};
+    (st.class || []).forEach((r) => { cr[r.task] = { sim: true, mm: r.real_mm, dir: r.real_dir }; });
+    ls.get('cloudQueue', []).forEach((q) => {
+      if (q.fn === 'kf_class_sim') cr[q.args.p_task] = Object.assign({ sim: true }, cr[q.args.p_task]);
+      if (q.fn === 'kf_class_real') cr[q.args.p_task] = { sim: true, mm: q.args.p_mm, dir: q.args.p_dir };
+    });
+    ls.set('classRes', cr);
+    if (st.programs && st.programs.length) {
       const last = (mode) => st.programs.filter((p) => p.mode === mode).pop();
       const py = last('python'), bl = last('blocks');
-      if (py) { ls.set('code', py.code); ls.set('slot', py.slot); }
-      if (bl && bl.blocks) ls.set('blocks', bl.blocks);
+      // a legutóbb felhőbe mentett program: a pálya Minta menüjéből visszahozható
+      if (py) ls.set('cloudCode', py.code);
+      if (bl && bl.blocks) ls.set('cloudBlocks', bl.blocks);
+      if (restore) {
+        if (py) { ls.set('code', py.code); ls.set('slot', py.slot); }
+        if (bl && bl.blocks) ls.set('blocks', bl.blocks);
+      }
     }
-    const after = JSON.stringify([ls.get('badges', []), ls.get('group', ''), ls.get('profile', {}), ls.get('unlocks', [])]);
-    return before !== after;
+    try { window.dispatchEvent(new Event('kodfejto-pulled')); } catch (e) { /* nem baj */ }
+    return before !== snap();
   }
 
   // ---- sorba állított mentések (ha épp nincs net)
@@ -119,9 +133,12 @@
 
   function saveProgram(slot, mode, code, blocks) {
     if (!session()) return;
+    if (mode === 'blocks') { if (blocks) ls.set('cloudBlocks', blocks); } else ls.set('cloudCode', code || '');
     enqueue('kf_save_program', { p_slot: slot || 'szabad', p_mode: mode, p_code: code || '', p_blocks: blocks || null }, 'prog:' + slot + ':' + mode);
   }
   function complete(mission) { if (session()) enqueue('kf_complete', { p_mission: mission }); }
+  function classSim(task) { if (session()) enqueue('kf_class_sim', { p_task: task }, 'csim:' + task); }
+  function classReal(task, mm, dir) { if (session()) enqueue('kf_class_real', { p_task: task, p_mm: mm, p_dir: dir }, 'creal:' + task); }
   function setAvatar(p) {
     if (!session()) return;
     const a = Object.assign({}, p); delete a.name;
@@ -159,7 +176,7 @@
   }
 
   window.KodfejtoCloud = {
-    enabled, session, roster, login, logout, pull, flush, saveProgram, complete, setAvatar,
+    enabled, session, roster, login, logout, pull, flush, saveProgram, complete, setAvatar, classSim, classReal,
     teacherSession, teacherLogin, teacherLogout, teacherToken, t,
     PICS: ['🚀', '🐸', '🍕', '⚽', '🌈', '🐱', '🎸', '🍦', '🌵', '🦊', '⭐', '🍎'],
     PIC_NAMES: ['rakéta', 'béka', 'pizza', 'labda', 'szivárvány', 'cica', 'gitár', 'fagyi', 'kaktusz', 'róka', 'csillag', 'alma'],

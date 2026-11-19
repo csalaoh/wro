@@ -43,6 +43,16 @@
   .chipx button { border: 0; background: var(--white); border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: 800; }
   .bview { height: 360px; border: 2px solid var(--line); border-radius: 12px; margin-top: 8px; overflow: hidden; }
   details.py { margin-top: 8px; } details.py summary { cursor: pointer; font-weight: 800; color: var(--muted); font-size: 14.5px; }
+  .cell.robot { background: #E3A008; border-color: #B07C00; }
+  .cell.cur { background: #DCE8FB; border-color: var(--blue); color: var(--blue); }
+  .cell.mm { width: auto; min-width: 36px; padding: 0 6px; font-size: 13.5px; white-space: nowrap; }
+  td.avg { white-space: nowrap; font-size: 12.5px; }
+  .queue { display: flex; flex-wrap: wrap; gap: 10px; }
+  .qitem { background: #FFF1D6; border: 3px solid #E3A008; border-radius: 14px; padding: 8px 14px; font-weight: 800; }
+  .qitem small { display: block; color: var(--muted); font-weight: 700; }
+  .openbox { display: flex; flex-wrap: wrap; gap: 14px; }
+  .ogrp { border-radius: 16px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
+  .ogrp.on { background: #DDF6E8; } .ogrp.off { background: #EEF0F4; }
   .warnbox { background: #FFF1D6; border-left: 6px solid var(--yellow-d); border-radius: 0 14px 14px 0; padding: 12px 16px; }
   @media print {
     body * { visibility: hidden; }
@@ -64,6 +74,7 @@
 <script src="assets/common.js"></script>
 <script src="assets/lessons.js"></script>
 <script src="assets/practice.js"></script>
+<script src="assets/foglalkozasok.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/blockly_compressed.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/blocks_compressed.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blockly@11.2.2/python_compressed.js"></script>
@@ -81,7 +92,8 @@
   const NAME_IDEAS = ['Csavar', 'Fogaskerék', 'Szikra', 'Bitfaragó', 'Vakond', 'Villám', 'Kódbagoly', 'Turbó', 'Mágnes', 'Radar', 'Szenzor', 'Lánctalp',
     'Rakéta', 'Kvarc', 'Neon', 'Pixel', 'Sólyom', 'Üstökös', 'Robi', 'Giroszkóp', 'Lézer', 'Teszla', 'Zümi', 'Kobak', 'Morzsa', 'Bütyök', 'Dugó', 'Kapcsoló', 'Spirál', 'Tranzisztor'];
 
-  const S = { tab: 'overview', filter: '', students: [], progress: [], programs: [], unlocks: [], openStudent: null, cards: [] };
+  const S = { tab: 'overview', filter: '', students: [], progress: [], programs: [], unlocks: [], openStudent: null, cards: [], classRes: [], lesson: '' };
+  const F = window.KodfejtoClass;
 
   if (!C.enabled) {
     app.innerHTML = `<div class="card"><h1>Még nincs bekapcsolva a felhős mód</h1>
@@ -131,13 +143,14 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
   }
 
   async function loadAll() {
-    const [st, pr, pg, ul] = await Promise.all([
+    const [st, pr, pg, ul, cr] = await Promise.all([
       C.t('GET', '/kf_students?select=id,codename,grp,active,last_seen,created_at,avatar&order=grp,codename'),
       C.t('GET', '/kf_progress?select=student_id,mission,done_at'),
       C.t('GET', '/kf_programs?select=student_id,slot,mode,code,blocks,runs,updated_at&order=updated_at.desc'),
-      C.t('GET', '/kf_unlocks?select=id,mission,scope,target&order=mission'),
+      C.t('GET', '/kf_unlocks?select=id,mission,scope,target,created_at&order=mission'),
+      C.t('GET', '/kf_class_results?select=student_id,task,sim_at,real_mm,real_dir,real_at&order=sim_at').catch(() => null),
     ]);
-    Object.assign(S, { students: st, progress: pr, programs: pg, unlocks: ul });
+    Object.assign(S, { students: st, progress: pr, programs: pg, unlocks: ul, classRes: cr || [], classMissing: !cr });
   }
 
   async function act(fn) {
@@ -152,10 +165,10 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
   function render() {
     views.forEach((w) => { try { w.dispose(); } catch (e) { /* nem baj */ } });
     views = [];
-    const tabs = [['overview', 'Ki hol tart?'], ['students', 'Diákok'], ['unlocks', 'Feloldások'], ['backup', 'Mentés']];
+    const tabs = [['overview', 'Ki hol tart?'], ['lesson', 'Foglalkozás'], ['students', 'Diákok'], ['unlocks', 'Feloldások'], ['backup', 'Mentés']];
     app.innerHTML = `<div class="tabs">${tabs.map(([k, t]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${t}</button>`).join('')}</div><div id="tab"></div>`;
     app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { S.tab = b.dataset.tab; render(); });
-    ({ overview, students, unlocks, backup })[S.tab](document.getElementById('tab'));
+    ({ overview, lesson, students, unlocks, backup })[S.tab](document.getElementById('tab'));
   }
 
   function groupFilter() {
@@ -204,7 +217,7 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
     const s = S.students.find((x) => x.id === S.openStudent);
     if (!s) return;
     const progs = S.programs.filter((p) => p.student_id === s.id);
-    const title = (slot) => { const i = M.findIndex((m) => m.id === slot); if (i >= 0) return (i + 1) + '. ' + M[i].title; const g = ((window.KodfejtoPractice || {}).TASKS || []).find((t) => t.id === slot); return g ? 'Gyakorlás: ' + g.title : 'Szabad gyakorlás'; };
+    const title = (slot) => { const i = M.findIndex((m) => m.id === slot); if (i >= 0) return (i + 1) + '. ' + M[i].title; const g = ((window.KodfejtoPractice || {}).TASKS || []).find((t) => t.id === slot); if (g) return 'Gyakorlás: ' + g.title; const f = F.task(slot); return f ? 'Foglalkozás ' + f.n + '. ' + f.title : 'Szabad gyakorlás'; };
     el.innerHTML = `<div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="row" style="justify-content:space-between"><h2 style="font-size:28px">${esc(s.codename)} programjai</h2><button class="btn btn-plain btn-sm" id="closeD">Bezár</button></div>
       ${progs.length ? progs.map((p, i) => `<div style="border-top:2px solid var(--sky);padding-top:10px">
@@ -249,6 +262,125 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
   }
   // a háttérben futó Pythonból kivesszük a blokk-kiemelő sorokat, hogy olvasható legyen
   const cleanPy = (code) => code.split('\n').filter((l) => !/^\s*block\(.*\)\s*$/.test(l)).join('\n').replace(/\n{3,}/g, '\n\n');
+
+  // ---- Foglalkozás (órai feladatsor): nyitás/zárás, élő táblázat, robotsor
+  const EXPIRE_H = 4;   // ugyanennyi, mint a schema.sql kf_state-jében
+  const DIRS = Object.fromEntries(F.DIRS.map(([k, n]) => [k, n.replace(/^\S+\s/, '')]));
+  const DIR_ICON = { pontos: '🎯', elotte: '⬇', tulment: '⬆', balra: '⬅', jobbra: '➡' };
+  const hm = (d) => new Date(d).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+  function groupOpen(lid, g) {
+    const u = S.unlocks.find((x) => x.mission === lid && ((x.scope === 'group' && x.target === g) || x.scope === 'all'));
+    if (!u) return null;
+    const exp = new Date(new Date(u.created_at).getTime() + EXPIRE_H * 3600e3);
+    return exp > new Date() ? { u, exp } : { u, exp, expired: true };
+  }
+  function resOf(sid, tid) { return S.classRes.find((r) => r.student_id === sid && r.task === tid); }
+  function stDone(sid, t) { const r = resOf(sid, t.id); return !!(r && (t.type === 'pipa' || r.real_dir)); }
+
+  function lesson(el) {
+    if (S.classMissing) {
+      el.innerHTML = `<div class="card"><h2 style="font-size:26px">Frissíteni kell az adatbázist</h2>
+        <p>A foglalkozásokhoz új tábla kell. Futtasd le újra a <code>supabase/schema.sql</code> teljes tartalmát a Supabase SQL Editorban (a meglévő adatokat nem bántja), aztán frissítsd ezt az oldalt.</p></div>`;
+      return;
+    }
+    if (!F.lesson(S.lesson)) S.lesson = F.LESSONS[0].id;
+    const L = F.lesson(S.lesson);
+    const studs = S.students.filter((s) => s.active && L.groups.includes(s.grp));
+    const queue = [];
+    studs.forEach((s) => L.tasks.forEach((t) => { const r = resOf(s.id, t.id); if (t.type === 'sim' && r && !r.real_dir) queue.push({ s, t, r }); }));
+    queue.sort((a, b) => new Date(a.r.sim_at) - new Date(b.r.sim_at));
+    const pot = S.unlocks.filter((u) => u.mission === L.id && u.scope === 'student');
+    // átlagos eltérés feladatonként, csapatonként (a blokk–Python összehasonlításhoz)
+    const avg = (t, g) => {
+      const v = studs.filter((s) => s.grp === g).map((s) => resOf(s.id, t.id)).filter((r) => r && r.real_dir).map((r) => r.real_mm);
+      return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) + ' mm (' + v.length + ')' : '–';
+    };
+    el.innerHTML = `<div class="card" style="display:flex;flex-direction:column;gap:16px">
+      <div class="row">${F.LESSONS.map((x) => `<button class="chip ${x.id === L.id ? 'on' : ''}" data-l="${x.id}">${esc(x.title)} · ${esc(x.groups.map((g) => GROUPS[g] ? GROUPS[g].name : g).join(' + '))}</button>`).join('')}</div>
+      <div class="openbox">${L.groups.map((g) => {
+        const o = groupOpen(L.id, g), on = o && !o.expired;
+        return `<div class="ogrp ${on ? 'on' : 'off'}"><b>${esc(GROUPS[g] ? GROUPS[g].name : g)}</b>
+          <span>${on ? `🟢 Nyitva ${hm(o.u.created_at)} óta · magától zár ${hm(o.exp)}-kor` : o ? '🔒 Lezárva (lejárt)' : '🔒 Zárva'}</span>
+          <div class="row">${on ? `<button class="btn btn-plain btn-sm" data-close="${g}">■ Lezárás</button>` : `<button class="btn btn-green btn-sm" data-open="${g}">▶ Megnyitás</button>`}</div></div>`;
+      }).join('')}
+        ${L.groups.length > 1 ? `<div class="ogrp off" style="justify-content:center"><button class="btn btn-blue btn-sm" data-openall="1">▶ Mindkét csapatnak</button><button class="btn btn-plain btn-sm" data-closeall="1">■ Mindet lezárom</button></div>` : ''}</div>
+      <div><b>Pótlás egyénileg</b> <span class="muted">(nem jár le magától, otthon is dolgozhat rajta):</span>
+        ${pot.map((u) => `<span class="chipx">${esc(u.target)}<button data-ud="${u.id}" aria-label="törlés">×</button></span>`).join('')}
+        <select data-pot="1"><option value="">+ diák…</option>${studs.filter((s) => !pot.some((u) => u.target === s.codename)).map((s) => `<option value="${esc(s.codename)}">${esc(s.codename)}</option>`).join('')}</select></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <h2 style="font-size:26px">🤖 Robotra vár (${queue.length})</h2>
+      ${queue.length ? `<div class="queue">${queue.map((q) => `<div class="qitem">${esc(q.s.codename)} · ${q.t.n}. ${esc(q.t.title)}<small>${esc(GROUPS[q.s.grp] ? GROUPS[q.s.grp].name : q.s.grp)} · ${hm(q.r.sim_at)} óta</small></div>`).join('')}</div>`
+        : '<p class="muted" style="margin:0">Most senki. Aki a szimulátorban megoldott egy feladatot, itt jelenik meg, érkezési sorrendben.</p>'}
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="row" style="justify-content:space-between"><h2 style="font-size:26px">Ki hol tart?</h2><span class="muted" id="liveNote">15 másodpercenként frissül.</span></div>
+      <p class="muted" style="margin:0">▶ = ezen dolgozik · 🤖 = robotra vár · zöld = kész, a szám a valódi robot eltérése mm-ben, a nyíl az iránya. Cellára kattintva törölheted az eredményt (újra kell csinálnia).</p>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Kódnév</th><th>Csapat</th>${L.tasks.map((t) => `<th class="m" title="${esc(t.title)}">${t.n}.${t.bonus ? '★' : ''}</th>`).join('')}<th>Kész</th></tr></thead>
+        <tbody>${studs.map((s) => {
+          let prevDone = true;
+          const cells = L.tasks.map((t) => {
+            const r = resOf(s.id, t.id), done = stDone(s.id, t);
+            let html;
+            if (done) html = `<button class="cell done ${t.type === 'sim' ? 'mm' : ''}" data-rs="${s.id}|${t.id}" title="${esc(t.title)}${r.real_dir ? ' – ' + DIRS[r.real_dir] : ''}">${t.type === 'sim' ? DIR_ICON[r.real_dir] + ' ' + r.real_mm : '✓'}</button>`;
+            else if (r) html = `<button class="cell robot" data-rs="${s.id}|${t.id}" title="Robotra vár ${hm(r.sim_at)} óta">🤖</button>`;
+            else if (prevDone) html = `<button class="cell cur" disabled title="Ezen dolgozik">▶</button>`;
+            else html = '<button class="cell" disabled></button>';
+            prevDone = done;
+            return `<td class="m">${html}</td>`;
+          }).join('');
+          return `<tr><td><b>${esc(s.codename)}</b></td><td class="muted">${esc(GROUPS[s.grp] ? GROUPS[s.grp].name : s.grp)}</td>${cells}<td class="muted">${L.tasks.filter((t) => stDone(s.id, t)).length}/${L.tasks.length}</td></tr>`;
+        }).join('')}
+        ${L.groups.map((g) => `<tr><td colspan="2" class="muted"><b>Átlag eltérés</b> · ${esc(GROUPS[g] ? GROUPS[g].name : g)}</td>${L.tasks.map((t) => `<td class="m muted avg">${t.type === 'sim' ? avg(t, g) : ''}</td>`).join('')}<td></td></tr>`).join('')}
+        </tbody></table></div>
+      ${studs.length ? '' : '<p class="muted">Ennek a foglalkozásnak a csapataiban még nincs aktív diák.</p>'}
+      <div><button class="btn btn-plain btn-sm" id="classCsv">⬇ A mérések letöltése (CSV)</button></div>
+    </div>`;
+    el.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { S.lesson = b.dataset.l; render(); });
+    const openG = async (g) => {
+      for (const u of S.unlocks.filter((x) => x.mission === L.id && x.scope === 'group' && x.target === g)) await C.t('DELETE', '/kf_unlocks?id=eq.' + u.id);
+      await C.t('POST', '/kf_unlocks', { mission: L.id, scope: 'group', target: g }, { Prefer: 'return=minimal' });
+    };
+    const closeG = async (g) => {
+      for (const u of S.unlocks.filter((x) => x.mission === L.id && (x.scope === 'all' || (x.scope === 'group' && x.target === g)))) await C.t('DELETE', '/kf_unlocks?id=eq.' + u.id);
+    };
+    el.querySelectorAll('[data-open]').forEach((b) => b.onclick = () => act(() => openG(b.dataset.open)));
+    el.querySelectorAll('[data-close]').forEach((b) => b.onclick = () => act(() => closeG(b.dataset.close)));
+    const oa = el.querySelector('[data-openall]'); if (oa) oa.onclick = () => act(async () => { for (const g of L.groups) await openG(g); });
+    const ca = el.querySelector('[data-closeall]'); if (ca) ca.onclick = () => act(async () => { for (const g of L.groups) await closeG(g); });
+    el.querySelectorAll('[data-ud]').forEach((b) => b.onclick = () => act(() => C.t('DELETE', '/kf_unlocks?id=eq.' + b.dataset.ud)));
+    const ps = el.querySelector('[data-pot]');
+    if (ps) ps.onchange = () => { if (ps.value) act(() => C.t('POST', '/kf_unlocks', { mission: L.id, scope: 'student', target: ps.value }, { Prefer: 'return=minimal' })); };
+    el.querySelectorAll('[data-rs]').forEach((b) => b.onclick = () => {
+      const [sid, tid] = b.dataset.rs.split('|'), st = S.students.find((x) => x.id === sid), t = F.task(tid);
+      if (!confirm(`Törlöd ${st.codename} eredményét a(z) ${t.n}. feladatnál (${t.title})? Újra meg kell oldania.`)) return;
+      act(() => C.t('DELETE', `/kf_class_results?student_id=eq.${sid}&task=eq.${tid}`));
+    });
+    el.querySelector('#classCsv').onclick = () => classCsv(L);
+  }
+  function classCsv(L) {
+    const day = new Date().toISOString().slice(0, 10);
+    const rows = [['Kódnév', 'Csapat', 'Foglalkozás', 'Feladat', 'Cím', 'Szimulátorban kész', 'Valódi eltérés (mm)', 'Irány', 'Beírva']];
+    S.classRes.forEach((r) => {
+      const t = F.task(r.task), s = S.students.find((x) => x.id === r.student_id);
+      if (!t || !s || (L && t.lesson !== L.id)) return;
+      rows.push([s.codename, s.grp, t.lesson, t.n, t.title, new Date(r.sim_at).toLocaleString('hu-HU'), r.real_mm == null ? '' : r.real_mm, r.real_dir ? DIRS[r.real_dir] : '', r.real_at ? new Date(r.real_at).toLocaleString('hu-HU') : '']);
+    });
+    download('kodfejto-foglalkozas-' + (L ? L.id + '-' : '') + day + '.csv', csv(rows), 'text/csv');
+  }
+  // élő frissítés a Foglalkozás fülön (csak az eredmények és a nyitások)
+  setInterval(async () => {
+    if (S.tab !== 'lesson' || document.hidden || S.classMissing || !C.teacherSession()) return;
+    if (document.activeElement && document.activeElement.tagName === 'SELECT') return;
+    try {
+      const [ul, cr] = await Promise.all([
+        C.t('GET', '/kf_unlocks?select=id,mission,scope,target,created_at&order=mission'),
+        C.t('GET', '/kf_class_results?select=student_id,task,sim_at,real_mm,real_dir,real_at&order=sim_at'),
+      ]);
+      if (JSON.stringify([ul, cr]) !== JSON.stringify([S.unlocks, S.classRes])) { S.unlocks = ul; S.classRes = cr; render(); }
+    } catch (e) { /* majd legközelebb */ }
+  }, 15000);
 
   // ---- Diákok
   function randomPics() {
@@ -377,16 +509,18 @@ select id, email from auth.users where email = '${esc(C.teacherSession().email)}
       <p style="margin:0">Az ingyenes Supabase-csomagban nincs automatikus biztonsági mentés. Félévente, és nagyobb változás előtt töltsd le a teljes mentést!</p>
       <div class="row"><button class="btn btn-blue" id="bAll">⬇ Teljes mentés (JSON)</button>
         <button class="btn btn-plain" id="bProg">⬇ Haladás táblázat (CSV, Excelhez)</button>
-        <button class="btn btn-plain" id="bCode">⬇ Programok (CSV)</button></div>
+        <button class="btn btn-plain" id="bCode">⬇ Programok (CSV)</button>
+        <button class="btn btn-plain" id="bClass">⬇ Foglalkozások mérései (CSV)</button></div>
       <p class="muted" style="margin:0">A kép-kódok titkosítva vannak, a mentésben sem szerepelnek. Visszaállításkor új kép-kódot kell adni.</p>
     </div>`;
     const name = (id) => (S.students.find((s) => s.id === id) || {}).codename || id;
     el.querySelector('#bAll').onclick = () => download('kodfejto-mentes-' + day + '.json',
-      JSON.stringify({ saved: new Date().toISOString(), students: S.students, progress: S.progress, programs: S.programs, unlocks: S.unlocks }, null, 1), 'application/json');
+      JSON.stringify({ saved: new Date().toISOString(), students: S.students, progress: S.progress, programs: S.programs, unlocks: S.unlocks, classResults: S.classRes }, null, 1), 'application/json');
     el.querySelector('#bProg').onclick = () => download('kodfejto-haladas-' + day + '.csv', csv(
       [['Kódnév', 'Csapat', 'Utoljára'].concat(M.map((m, i) => (i + 1) + '. ' + m.title))].concat(
         S.students.map((s) => [s.codename, s.grp, s.last_seen ? new Date(s.last_seen).toLocaleString('hu-HU') : ''].concat(
           M.map((m) => { const p = S.progress.find((x) => x.student_id === s.id && x.mission === m.id); return p ? new Date(p.done_at).toLocaleDateString('hu-HU') : ''; }))))), 'text/csv');
+    el.querySelector('#bClass').onclick = () => classCsv(null);
     el.querySelector('#bCode').onclick = () => download('kodfejto-programok-' + day + '.csv', csv(
       [['Kódnév', 'Hely', 'Mód', 'Futtatások', 'Utoljára', 'Kód']].concat(
         S.programs.map((p) => [name(p.student_id), p.slot, p.mode, p.runs, new Date(p.updated_at).toLocaleString('hu-HU'), p.code]))), 'text/csv');

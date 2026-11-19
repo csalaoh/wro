@@ -71,6 +71,8 @@ window.KODFEJTO_CONFIG = {
 4. **Nyomtatás**: a kártyákon ott a gyerek titkos kép-kódja (3 kép, sorrendben). Ezt csak most látod, mert az adatbázisban titkosítva van. Ha elveszik, a **🔑 Új kép-kód** gombbal adhatsz újat.
 5. **Feloldások** fül: itt állítod be, melyik küldetés kinek nyitott (mindenki / csapat / egy diák). Kezdetben az eddigi 7 küldetés mindenkinek nyitott.
 
+6. **Foglalkozás** fül: az órai feladatsort itt nyitod meg a csapatnak (▶ Megnyitás), és itt zárod le az óra végén. Ha elfelejted, 4 óra után magától lezárul. Itt látod élőben, ki hol tart, ki vár a robotra, és a mért eltéréseket.
+
 Hogy melyik kódnév melyik gyerek, azt ne az oldalon, hanem a saját papírodon vagy gépeden tartsd!
 
 ## 7. A napi „ébresztő” ellenőrzése
@@ -95,4 +97,5 @@ Az ingyenes csomagban nincs automatikus mentés. A tanári felületen: **Mentés
 | A gyerekoldal „Nem érem el a tárhelyet” | Rossz a cím vagy a kulcs a `config.js`-ben, vagy elaludt a projekt (lásd 7.). |
 | Tanári belépés után: „Ez a fiók még nem tanár” | A 4/3. lépés kimaradt. Az oldal kiírja a pontos SQL-t. |
 | „Túl sok rossz próbálkozás” | 5 rossz kép-kód után 5 percre zárol. Vagy várni kell, vagy adj új kép-kódot. |
+| A Foglalkozás fülön: „Frissíteni kell az adatbázist” | A foglalkozásokhoz új tábla kell: futtasd le újra a teljes `schema.sql`-t (2. lépés). A meglévő adatokat nem bántja. |
 | Vissza akarok térni a régi, belépés nélküli módhoz | Töröld ki a két értéket a `config.js`-ből (maradjon `''`). |
