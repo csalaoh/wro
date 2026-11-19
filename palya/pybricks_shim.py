@@ -340,13 +340,14 @@ class Motor:
         _sim.motor_run(self._port, self._dir, 0.0)
 
     def run_until_stalled(self, speed, then=Stop.COAST, duty_limit=None):
-        _not_yet("A run_until_stalled")
+        # addig forog, amíg el nem akad (a kar a végállásnál, a kerék a falnál)
+        return int(round(_sim.motor_run_until_stalled(self._port, self._dir, float(speed)) - self._zero))
 
     def done(self):
         return True
 
     def stalled(self):
-        return bool(_sim.stalled())
+        return bool(_sim.motor_stalled(self._port))
 
 
 class ColorSensor:

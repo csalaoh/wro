@@ -34,6 +34,7 @@
   };
 
   const MATS = {
+    // A versenypályák (challenges.js) futás közben jegyzik be magukat ide.
     palya1: { name: 'Pálya1', width: 1120, height: 990 },
     palya2: { name: 'Pálya2', width: 990, height: 1120 },
     rajzlap: { name: 'Rajzlap', width: 1000, height: 800 },
@@ -94,10 +95,17 @@
       // balra tükrözve van, ezért a bal kerék előre-gurulása = -raw.
       this.motors = {};
       for (const p of 'ABCDEF') {
-        if (this.robot.ports[p] && this.robot.ports[p].startsWith('motor')) {
-          this.motors[p] = { raw: 0, rawSpeed: 0, side: this.robot.ports[p] === 'motor-left' ? 'left' : 'right' };
+        const kind = this.robot.ports[p];
+        if (kind && kind.startsWith('motor')) {
+          this.motors[p] = { raw: 0, rawSpeed: 0, side: kind === 'motor-left' ? 'left' : kind === 'motor-right' ? 'right' : 'arm' };
         }
       }
+      // Pályaelemek és kar (world.js). A kar motorja a robot.ports-ban 'motor-arm'.
+      this.world = opts.world || null;
+      this.armPort = Object.keys(this.motors).find((p) => this.motors[p].side === 'arm') || null;
+      this.arm = opts.attachment && opts.attachment.min != null ? opts.attachment : null;
+      this.armStalled = false; this.armStallTime = 0;
+      if (this.world) { this.world.sim = this; this.world.setArm(0, { x: this.x, y: this.y, heading: this.heading }); }
       this.stalled = false;
       this.stallTime = 0;
       this.light = 'none';
@@ -118,7 +126,7 @@
       for (const p in this.motors) {
         const m = this.motors[p];
         const v = m.rawSpeed * this.mmPerDeg(m.side);
-        if (m.side === 'left') vl += -v; else vr += v;
+        if (m.side === 'left') vl += -v; else if (m.side === 'right') vr += v;
       }
       return [vl, vr];
     }
@@ -174,7 +182,10 @@
 
     record(force) {
       if (force || this.t - this.lastFrameT >= FRAME_EVERY) {
-        this.frames.push({ t: this.t, x: this.x, y: this.y, h: this.heading });
+        const f = { t: this.t, x: this.x, y: this.y, h: this.heading };
+        if (this.armPort) f.arm = Math.round(this.armAngle());
+        if (this.world) f.o = this.world.snapshot();
+        this.frames.push(f);
         this.lastFrameT = this.t;
       }
     }
@@ -184,7 +195,12 @@
     // Egy DT hosszú lépés: a motorok aktuális sebességével gurul a robot.
     step(dt) {
       if (this.t + dt > MAX_TIME) throw new SimTimeout('SIM_TIMEOUT');
-      for (const p in this.motors) this.motors[p].raw += this.motors[p].rawSpeed * dt / 1000;
+      for (const p in this.motors) {
+        const m = this.motors[p];
+        m.raw += m.rawSpeed * dt / 1000;
+        if (m.side === 'arm') this.limitArm(m, dt);
+      }
+      if (this.world) this.world.setArm(this.armAngle(), { x: this.x, y: this.y, heading: this.heading });
       const [vl, vr] = this.wheelSpeeds();
       const s = dt / 1000;
       const P = this.poseAfter(vl, vr, s);
@@ -206,6 +222,12 @@
           if (R.shift < 3 && !this.outside(R.x, R.y, R.h).length) { moved = R; break; }
         }
       }
+      // A pályaelemek: a robot tolja őket, a rögzítettek megállítják.
+      if (this.world) {
+        const target = moved || { x: this.x, y: this.y, h: this.heading };
+        // (ha a robot áll, és csak a kar mozdul, a kar akkor sem akad meg)
+        if (!this.world.moveRobot({ x: target.x, y: target.y, heading: target.h }) && moved) moved = null;
+      }
       if (moved) {
         const progressed = Math.hypot(moved.x - this.x, moved.y - this.y) > 1e-4 || Math.abs(moved.h - this.heading) > 1e-5;
         this.x = moved.x; this.y = moved.y; this.heading = moved.h;
@@ -216,8 +238,38 @@
         this.stalled = true;
         this.stallTime += dt;
       }
+      if (this.world) this.world.checkTriggers({ x: this.x, y: this.y, heading: this.heading });
       this.t += dt;
       this.record(false);
+    }
+
+    // --- a kar (E port) ------------------------------------------------------
+    // A kar a két végállása között mozoghat; ott a motor elakad, mint a valóságban.
+    armAngle() { return this.armPort ? this.motors[this.armPort].raw : 0; }
+    limitArm(m, dt) {
+      const lo = this.arm ? this.arm.min : -Infinity, hi = this.arm ? this.arm.max : Infinity;
+      let hitEnd = false;
+      if (m.raw < lo) { m.raw = lo; hitEnd = m.rawSpeed < 0; }
+      if (m.raw > hi) { m.raw = hi; hitEnd = m.rawSpeed > 0; }
+      if (hitEnd) { this.armStallTime += dt; this.armStalled = this.armStallTime >= 60; }
+      else { this.armStallTime = 0; this.armStalled = false; }
+    }
+    motorStalled(port) {
+      return this.motors[port] && this.motors[port].side === 'arm' ? this.armStalled : this.stalled;
+    }
+    // run_until_stalled: addig forog, amíg a motor elakad (kar: végállás, kerék: fal).
+    runUntilStalled(port, dir, speed) {
+      const m = this.motors[port];
+      const isArm = m.side === 'arm';
+      this.stallTime = 0; this.armStallTime = 0; this.armStalled = false;
+      m.rawSpeed = speed * dir;
+      let left = 10000;
+      while (left > 0) {
+        this.step(DT); left -= DT;
+        if (isArm ? this.armStalled : this.stallTime >= 300) break;
+      }
+      m.rawSpeed = 0;
+      this.record(true);
     }
 
     advance(ms) {
@@ -252,7 +304,7 @@
         m.rawSpeed = (target - m.raw) / (dt / 1000);
         this.step(dt);
         elapsed += dt;
-        if (this.stallTime >= STALL_GIVE_UP) break;
+        if (m.side === 'arm' ? this.armStallTime >= 300 : this.stallTime >= STALL_GIVE_UP) break;
       }
       m.rawSpeed = 0;
       this.record(true);
@@ -352,7 +404,7 @@
       return [255, 255, 255];
     }
 
-    // Távolságérzékelő: a falig mért távolság (mm), a pályaelemek az 1. verzióban még nem.
+    // Távolságérzékelő: a falig vagy a legközelebbi pályaelemig mért távolság (mm).
     distanceAhead() {
       const d = this.robot.distanceSensor;
       const p = this.pointOnRobot(d.forward, d.side);
@@ -363,6 +415,7 @@
       if (dx < -1e-9) best = Math.min(best, -p.x / dx);
       if (dy > 1e-9) best = Math.min(best, (H - p.y) / dy);
       if (dy < -1e-9) best = Math.min(best, -p.y / dy);
+      if (this.world) best = Math.min(best, this.world.raycast([p.x, p.y], [dx, dy]));
       return best < 40 ? 2000 : Math.round(Math.min(best, 2000));
     }
 
